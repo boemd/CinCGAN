@@ -1,5 +1,5 @@
 # CinCGAN
-Unofficial implementation of the model proposed in *Unsupervised Image Super-Resolution using Cycle-in-Cycle Generative Adversarial Networks* by Yuan *er al.*
+Unofficial implementation of the model proposed in *Unsupervised Image Super-Resolution using Cycle-in-Cycle Generative Adversarial Networks* by Yuan *et al.*
 
 Master's thesis for the Degree *ICT for Internet and Multimedia*, University of Padova. 
 
