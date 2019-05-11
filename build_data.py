@@ -12,9 +12,9 @@ FLAGS = tf.flags.FLAGS
 
 tf.flags.DEFINE_string('input_dir', 'data/DIV2K/Y_train_ag',
                        'Input directory')
-tf.flags.DEFINE_string('gt_dir', 'data/DIV2K/Y_train_ag',
+tf.flags.DEFINE_string('gt_dir', '../data/DIV2K/Y_train_ag',
                        'Ground truth directory')
-tf.flags.DEFINE_string('output_file', 'data/tfrecords/train_y.tfrecords',
+tf.flags.DEFINE_string('output_file', '../data/tfrecords/train_y.tfrecords',
                        'Output tfrecords file')
 
 

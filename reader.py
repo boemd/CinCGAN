@@ -203,7 +203,7 @@ def test_pick():
 
 
 def test_reader():
-    TRAIN_FILE_1 = 'data/tfrecords/train_y.tfrecords'
+    TRAIN_FILE_1 = '../data/tfrecords/train_y.tfrecords'
 
     with tf.Graph().as_default():
         reader1 = Reader(TRAIN_FILE_1, batch_size=3)
