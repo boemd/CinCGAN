@@ -10,11 +10,11 @@ except ImportError:
 
 FLAGS = tf.flags.FLAGS
 
-tf.flags.DEFINE_string('input_dir', 'data/DIV2K/Y_train_ag',
+tf.flags.DEFINE_string('input_dir', '../data/DIV2K/Z_train_augmented',
                        'Input directory')
-tf.flags.DEFINE_string('gt_dir', '../data/DIV2K/Y_train_ag',
+tf.flags.DEFINE_string('gt_dir', '../data/DIV2K/Z_train_augmented',
                        'Ground truth directory')
-tf.flags.DEFINE_string('output_file', '../data/tfrecords/train_y.tfrecords',
+tf.flags.DEFINE_string('output_file', '../data/tfrecords/train_z.tfrecords',
                        'Output tfrecords file')
 
 

@@ -1,4 +1,8 @@
-#data folder
+#folders
 data/
-pycache/
+__pycache__/
 .idea/
+checkpoints/
+
+#scripts
+prove.py
