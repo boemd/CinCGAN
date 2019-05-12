@@ -8,6 +8,7 @@ import random
 
 REAL_LABEL = 0.9
 
+
 class CleanGAN:
     def __init__(self,
                  X_train_file='',
@@ -34,8 +35,8 @@ class CleanGAN:
 
         self.is_training = tf.placeholder_with_default(True, shape=[], name='is_training')
 
-        self.G1 = Generator12('G1', self.is_training,)
-        self.G2 = Generator12('G2', self.is_training,)
+        self.G1 = Generator12('G1', self.is_training)
+        self.G2 = Generator12('G2', self.is_training)
         self.D1 = Discriminator1('D1', self.is_training)
         self.fake_y = tf.placeholder(tf.float32, shape=[batch_size, None, None, 3])
 

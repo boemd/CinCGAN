@@ -32,11 +32,11 @@ tf.flags.DEFINE_integer('max_iter', 400000, 'maximum number of iterations during
 def train():
     if FLAGS.load_model is not None:
         # load the specified model
-        checkpoints_dir = "checkpoints/" + FLAGS.load_model.lstrip("checkpoints/")
+        checkpoints_dir = "checkpoints/lr/" + FLAGS.load_model.lstrip("checkpoints/")
     else:
         # create checkpoint directory
         current_time = datetime.now().strftime("%Y%m%d-%H%M")
-        checkpoints_dir = "checkpoints/{}".format(current_time)
+        checkpoints_dir = "checkpoints/lr/{}".format(current_time)
         try:
             os.makedirs(checkpoints_dir)
         except os.error:
@@ -123,6 +123,7 @@ def write_config_file(checkpoints_dir):
     now = datetime.now()
     date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
     with open(checkpoints_dir + '/config.txt', 'w') as c:
+        c.write('LOW RESOLUTION MODEL' + '\n')
         c.write(date_time + '\n')
         c.write('Batch size:' + str(FLAGS.batch_size) + '\n')
         c.write('Iterations:' + str(FLAGS.max_iter) + '\n')
