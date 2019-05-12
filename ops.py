@@ -44,6 +44,26 @@ def c3s1_k(input, k, reuse=False, activation='leaky', slope=0.2, is_training=Tru
         return output
 
 
+def c3s2_k(input, k, reuse=False, activation='leaky', slope=0.2, is_training=True, name='c7s1_k'):
+    with tf.variable_scope(name, reuse=reuse):
+        weights = _weights("weights",
+                           shape=[3, 3, input.get_shape()[3], k])
+
+        conv = tf.nn.conv2d(input, weights,
+                            strides=[1, 2, 2, 1], padding='VALID')
+
+        if activation == 'relu':
+            output = tf.nn.relu(conv)
+        elif activation == 'tanh':
+            output = tf.nn.tanh(conv)
+        elif activation == 'leaky':
+            output = _leaky_relu(conv, slope)
+        else:
+            output = conv
+
+        return output
+
+
 def n_res_blocks(input, reuse, is_training=True, n=6):
     depth = input.get_shape()[3]
     for i in range(1,n+1):
@@ -52,10 +72,10 @@ def n_res_blocks(input, reuse, is_training=True, n=6):
     return output
 
 
-def Rk(input, k,  reuse=False, is_training=True, name=None):
+def Rk(input, k,  reuse=False, is_training=True, name=None, activation='leaky'):
     with tf.variable_scope(name, reuse=reuse):
-        out1 = c3s1_k(input, k, reuse, activation='leaky', slope=0.2, is_training=is_training, name="c3s1_k_block_a")
-        out2 = c3s1_k(out1, k, reuse, activation='leaky', slope=0.2, is_training=is_training, name="c3s1_k_block_b")
+        out1 = c3s1_k(input, k, reuse, activation=activation, slope=0.2, is_training=is_training, name="c3s1_k_block_a")
+        out2 = c3s1_k(out1, k, reuse, activation=activation, slope=0.2, is_training=is_training, name="c3s1_k_block_b")
         output = tf.math.add(out2, input)
     return output
 
@@ -153,6 +173,43 @@ def _instance_norm(input):
         inv = tf.rsqrt(variance + epsilon)
         normalized = (input - mean) * inv
         return scale * normalized + offset
+
+
+def upsample(x,features=64,activation='leaky', reuse=False, is_training=False):
+    conv1 = c3s1_k(x, k=features, is_training=is_training, reuse=reuse, name='conv1', activation=activation)
+    conv2 = c3s1_k(conv1, k=12, is_training=is_training, reuse=reuse, name='conv2', activation=activation)
+    conv3 = c3s1_k(conv2, k=12, is_training=is_training, reuse=reuse, name='conv3', activation=activation)
+    out = PS(conv3, 2, color=True)
+    return out
+
+
+def _phase_shift(I, r):
+    """
+    Borrowed from https://github.com/tetrachrome/subpixel
+    Used for subpixel phase shifting after deconv operations
+    """
+    bsize, a, b, c = I.get_shape().as_list()
+    bsize = tf.shape(I)[0] # Handling Dimension(None) type for undefined batch dim
+    X = tf.reshape(I, (bsize, a, b, r, r))
+    X = tf.transpose(X, (0, 1, 2, 4, 3))  # bsize, a, b, 1, 1
+    X = tf.split(X, a, 1)  # a, [bsize, b, r, r]
+    X = tf.concat([tf.squeeze(x, axis=1) for x in X],2)  # bsize, b, a*r, r
+    X = tf.split(X, b, 1)  # b, [bsize, a*r, r]
+    X = tf.concat([tf.squeeze(x, axis=1) for x in X],2)  # bsize, a*r, b*r
+    return tf.reshape(X, (bsize, a*r, b*r, 1))
+
+
+def PS(X, r, color=False):
+    """
+    Borrowed from https://github.com/tetrachrome/subpixel
+    Used for subpixel phase shifting after deconv operations
+    """
+    if color:
+        Xc = tf.split(X, 3, 3)
+        X = tf.concat([_phase_shift(x, r) for x in Xc],3)
+    else:
+        X = _phase_shift(X, r)
+    return X
 
 
 def safe_log(x, eps=1e-12):

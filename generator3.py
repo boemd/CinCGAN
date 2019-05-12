@@ -1,0 +1,52 @@
+import tensorflow as tf
+import ops
+import utils
+
+
+class Generator3:
+    def __init__(self, name, is_training):
+        self.name = name
+        self.reuse = False
+        self.is_training = is_training
+
+    def __call__(self, input):
+        """
+        Args:
+          input: batch_size x width x height x 3
+        Returns:
+          output: same size as input
+        """
+        with tf.variable_scope(self.name):
+            # 3 convolutional head layers
+            c7s1_64 = ops.c7s1_k(input, k=64, is_training=self.is_training,
+                                 reuse=self.reuse, name='b_c7s1_64')
+            c3s2_64_a = ops.c3s2_k(c7s1_64, k=64, is_training=self.is_training,
+                                   reuse=self.reuse, name='b_c3s1_64_a')
+            c3s2_64_b = ops.c3s2_k(c3s2_64_a, k=64, is_training=self.is_training,
+                                   reuse=self.reuse, name='b_c3s1_64_b')
+
+            # 6 residual blocks
+            blocks = ops.n_res_blocks(c3s2_64_b, reuse=self.reuse, n=6)
+
+            # 3 convolutional tail layers
+            c3s1_64_c = ops.c3s1_k(blocks, k=64, is_training=self.is_training,
+                                   reuse=self.reuse, name='b_c3s1_64_c')
+            c3s1_64_d = ops.c3s1_k(c3s1_64_c, k=64, is_training=self.is_training,
+                                   reuse=self.reuse, name='b_c3s1_64_d')
+            c7s1_3 = ops.c7s1_k(c3s1_64_d, k=3, is_training=self.is_training,
+                                reuse=self.reuse, name='b_c7s1_3_b', activation=None)
+            # out = tf.clip_by_value(c7s1_3, -1, 1)
+            # set reuse=True for next call
+            self.reuse = True
+            self.variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=self.name)
+
+            return c7s1_3  # out
+
+    def sample(self, input_img):
+        image = utils.batch_convert2int(self.__call__(input_img))
+        image = tf.image.encode_png(tf.squeeze(image, [0]))
+        return image
+
+    def sample_f(self, input_img):
+        return tf.squeeze(self.__call__(input_img), [0])
+
