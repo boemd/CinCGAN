@@ -10,7 +10,7 @@ W = 279
 
 class Reader():
     def __init__(self, tfrecords_file, image_size=None,
-                 min_queue_examples=0, batch_size=2, num_threads=8, name='', crop_size=32):
+                 min_queue_examples=0, batch_size=2, num_threads=8, name='', crop_size=32, scale=4):
         """
         Args:
           tfrecords_file: string, tfrecords file path
@@ -26,6 +26,7 @@ class Reader():
         self.reader = tf.TFRecordReader()
         self.name = name
         self.crop_size = crop_size
+        self.scale = scale
 
         self.im1p = tf.placeholder(tf.uint8, shape=[None, None, 3])
         self.im2p = tf.placeholder(tf.uint8, shape=[None, None, 3])
@@ -149,6 +150,38 @@ class Reader():
 
             # tf.summary.image('_input', images)
         return images, gt_images, aa, bb
+
+    def pair_feed(self):
+        with tf.name_scope(self.name):
+            filename_queue = tf.train.string_input_producer([self.tfrecords_file])
+
+            _, serialized_example = self.reader.read(filename_queue)
+            features = tf.parse_single_example(
+                serialized_example,
+                features={
+                    'image/file_name': tf.FixedLenFeature([], tf.string),
+                    'image/encoded_image': tf.FixedLenFeature([], tf.string),
+                    'image/gt_file_name': tf.FixedLenFeature([], tf.string),
+                    'image/gt_encoded_image': tf.FixedLenFeature([], tf.string)
+                })
+
+            image_buffer = features['image/encoded_image']
+            aa = features['image/file_name']
+
+            image = tf.image.decode_png(image_buffer, channels=3)
+
+            image = utils.convert2float(image)
+            y = tf.random_crop(image, [self.crop_size*self.scale, self.crop_size*self.scale, 3])
+            x = tf.image.resize_images(y, [self.crop_size, self.crop_size], tf.image.ResizeMethod.BILINEAR)
+
+            x_s, y_s, aaa = tf.train.shuffle_batch(
+                [x, y, aa], batch_size=self.batch_size, num_threads=self.num_threads,
+                capacity=self.batch_size,  # self.min_queue_examples + 3 * self.batch_size,
+                min_after_dequeue=0,  # self.min_queue_examples,
+            )
+
+            # tf.summary.image('_input', images)
+        return x_s, y_s, aaa
 
 
 def test_pick():

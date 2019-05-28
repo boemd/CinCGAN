@@ -1,4 +1,5 @@
 import tensorflow as tf
+import tensorflow.contrib.slim as slim
 
 # Layers: follow the naming convention used in the original paper
 # Generator layers
@@ -72,11 +73,25 @@ def n_res_blocks(input, reuse, is_training=True, n=6):
     return output
 
 
+def resBlock(x, channels=64, kernel_size=[3, 3], scale=1):
+    tmp = slim.conv2d(x, channels, kernel_size, activation_fn=None)
+    tmp = tf.nn.relu(tmp)
+    tmp = slim.conv2d(tmp, channels, kernel_size, activation_fn=None)
+    tmp *= scale
+    return x + tmp
+
+
+def log10(x):
+    numerator = tf.log(x)
+    denominator = tf.log(tf.constant(10, dtype=numerator.dtype))
+    return numerator / denominator
+
+
 def Rk(input, k,  reuse=False, is_training=True, name=None, activation='leaky'):
     with tf.variable_scope(name, reuse=reuse):
         out1 = c3s1_k(input, k, reuse, activation=activation, slope=0.2, is_training=is_training, name="c3s1_k_block_a")
         out2 = c3s1_k(out1, k, reuse, activation=activation, slope=0.2, is_training=is_training, name="c3s1_k_block_b")
-        output = tf.math.add(out2, input)
+        output = tf.add(out2, input)
     return output
 
 
@@ -175,12 +190,26 @@ def _instance_norm(input):
         return scale * normalized + offset
 
 
-def upsample(x,features=64,activation='leaky', reuse=False, is_training=False):
-    conv1 = c3s1_k(x, k=features, is_training=is_training, reuse=reuse, name='conv1', activation=activation)
-    conv2 = c3s1_k(conv1, k=12, is_training=is_training, reuse=reuse, name='conv2', activation=activation)
-    conv3 = c3s1_k(conv2, k=12, is_training=is_training, reuse=reuse, name='conv3', activation=activation)
-    out = PS(conv3, 2, color=True)
-    return out
+def upsample(x, scale=2, features=64, activation=tf.nn.relu):
+    assert scale in [2, 3, 4]
+    x = slim.conv2d(x, features, [3, 3], activation_fn=activation)
+    if scale == 2:
+        ps_features = 3 * (scale ** 2)
+        x = slim.conv2d(x, ps_features, [3, 3], activation_fn=activation)
+        # x = slim.conv2d_transpose(x,ps_features,6,stride=1,activation_fn=activation)
+        x = PS(x, 2, color=True)
+    elif scale == 3:
+        ps_features = 3 * (scale ** 2)
+        x = slim.conv2d(x, ps_features, [3, 3], activation_fn=activation)
+        # x = slim.conv2d_transpose(x,ps_features,9,stride=1,activation_fn=activation)
+        x = PS(x, 3, color=True)
+    elif scale == 4:
+        ps_features = 3 * (2 ** 2)
+        for i in range(2):
+            x = slim.conv2d(x, ps_features, [3, 3], activation_fn=activation)
+            # x = slim.conv2d_transpose(x,ps_features,6,stride=1,activation_fn=activation)
+            x = PS(x, 2, color=True)
+    return x
 
 
 def _phase_shift(I, r):

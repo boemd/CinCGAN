@@ -2,9 +2,13 @@ import tensorflow as tf
 from lr_model import CleanGAN
 from datetime import datetime
 import os
+import utils
 import logging
 from os import listdir, makedirs, error
 from os.path import isfile, join
+import cv2
+import numpy as np
+import math
 
 '''
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID";
@@ -16,7 +20,7 @@ tf.flags.DEFINE_integer('batch_size', 16, 'batch size, default: 16')
 tf.flags.DEFINE_float('b1', 10, 'weight for cycle consistency loss, default: 10')
 tf.flags.DEFINE_float('b2', 5, 'weight for identity loss, default: 5')
 tf.flags.DEFINE_float('b3', 0.5, 'weight for total variation loss, default: 0.5')
-tf.flags.DEFINE_float('learning_rate', 2e-4, 'initial learning rate for Adam, default: 0.0002')
+tf.flags.DEFINE_float('learning_rate', 0.0002, 'initial learning rate for Adam, default: 0.0002')
 tf.flags.DEFINE_float('beta1', 0.5, 'momentum term of Adam, default: 0.5')
 tf.flags.DEFINE_float('beta2', 0.999, 'momentum term of Adam, default: 0.999')
 tf.flags.DEFINE_float('epsilon', 1e-8, 'constant for numerical stability of Adam, default: 1e-8')
@@ -27,6 +31,8 @@ tf.flags.DEFINE_string('Y', '../data/tfrecords/train_y.tfrecords',
 tf.flags.DEFINE_string('load_model', None,
                        'folder of saved model that you wish to continue training (e.g. 20170602-1936), default: None')
 tf.flags.DEFINE_integer('max_iter', 400000, 'maximum number of iterations during training, default: 400000')
+tf.flags.DEFINE_string('input_folder', '../data/DIV2K/X_validation/', 'validation set')
+tf.flags.DEFINE_string('input_gt_folder', '../data/DIV2K/X_validation_gt/', 'validation ground truth set')
 
 
 def train():
@@ -58,7 +64,7 @@ def train():
             beta2=FLAGS.beta2,
             epsilon=FLAGS.epsilon
         )
-        G1_loss, G2_loss, D1_loss, fake_y = lr_gan.model()
+        G1_loss, G2_loss, D1_loss, fake_y, val_y = lr_gan.model()
         optimizers = lr_gan.optimize(G1_loss, G2_loss, D1_loss)
         logging.info('CleanGAN initialized')
 
@@ -80,30 +86,84 @@ def train():
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
+        ################################################################################################################
+        img_name_803 = '../data/DIV2K/X_validation/0803x4.png'
+        img_name_810 = '../data/DIV2K/X_validation/0810x4.png'
+        img_name_823 = '../data/DIV2K/X_validation/0823x4.png'
+        img_name_829 = '../data/DIV2K/X_validation/0829x4.png'
+        output_folder = checkpoints_dir + '/samples'
+        try:
+            os.makedirs(output_folder)
+        except os.error:
+            pass
+
+        files_sv = [img_name_803, img_name_810, img_name_823, img_name_829]
+        rounds_sv = len(files_sv)
+        ################################################################################################################
+
         try:
             print_total_parameters()
-
+            ps = 0
             while (not coord.should_stop()) and step < FLAGS.max_iter:
+
                 fake_y_val = fake_y.eval()
                 _, G1_loss_val, G2_loss_val, D1_loss_val, summary = (
                     sess.run(
                         [optimizers, G1_loss, G2_loss, D1_loss, summary_op],
-                        feed_dict={lr_gan.fake_y: fake_y_val}
+                        feed_dict={lr_gan.fake_y: fake_y_val,
+                                   lr_gan.psnr_validation: ps}
                     )
                 )
+
 
                 train_writer.add_summary(summary, step)
                 train_writer.flush()
 
-                if step % 100 == 0:
+                if step % 1000 == 0:
                     logging.info('-----------Step %d:-------------' % step)
                     logging.info('  G1_loss   : {}'.format(G1_loss_val))
                     logging.info('  G2_loss   : {}'.format(G2_loss_val))
                     logging.info('  D1_loss   : {}'.format(D1_loss_val))
+                    ####################################################################################################
+                    for i in range(rounds_sv):
+                        img = cv2.imread(files_sv[i])
+                        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                        im1 = np.zeros([1, img.shape[0], img.shape[1], img.shape[2]])
+                        im1[0] = img
+                        im1 = im1.astype('uint8')
+                        y = sess.run(val_y, feed_dict={lr_gan.val_x: im1})
+                        y = y[0]
+                        y = cv2.cvtColor(y, cv2.COLOR_RGB2BGR)
+                        out_name = output_folder + '/' + 'step_' + str(step) + '_img_' + str(i) + '.png'
+                        cv2.imwrite(out_name, y)
+                    ####################################################################################################
 
                 if step % 10000 == 0:
                     save_path = saver.save(sess, checkpoints_dir + "/model.ckpt", global_step=step)
                     logging.info("Model saved in file: %s" % save_path)
+                    ####################################################################################################
+                    logging.info('Validating...')
+                    files = [f for f in listdir(FLAGS.input_folder) if isfile(join(FLAGS.input_folder, f))]
+                    gt_files = [f for f in listdir(FLAGS.input_gt_folder) if isfile(join(FLAGS.input_gt_folder, f))]
+                    ps = 0
+                    rounds = len(files)
+                    for i in range(rounds):
+                        img = cv2.imread(FLAGS.input_gt_folder + files[i])
+                        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                        im1 = np.zeros([1, img.shape[0], img.shape[1], img.shape[2]])
+                        im1[0] = img
+                        im1 = im1.astype('uint8')
+                        gt = cv2.imread(FLAGS.input_gt_folder + gt_files[i])
+                        gt = cv2.cvtColor(gt, cv2.COLOR_BGR2RGB)
+                        y = sess.run(val_y, feed_dict={lr_gan.val_x: im1})
+                        y = y[0]
+                        y = cv2.cvtColor(y, cv2.COLOR_RGB2BGR)
+                        ps += psnr(y, gt)
+                    ps /= rounds
+                    logging.info('Validation completed. PSNR: {:f}'.format(ps))
+                    ####################################################################################################
+
+
 
                 step += 1
         except KeyboardInterrupt:
@@ -119,11 +179,47 @@ def train():
             coord.join(threads)
 
 
+def save_imgs(G1, step, dir):
+    img_name_803 = '../data/DIV2K/X_validation/0803x4.png'
+    img_name_810 = '../data/DIV2K/X_validation/0810x4.png'
+    img_name_823 = '../data/DIV2K/X_validation/0823x4.png'
+    img_name_829 = '../data/DIV2K/X_validation/0829x4.png'
+
+    output_folder = dir + '/samples'
+    try:
+        os.makedirs(output_folder)
+    except os.error:
+        pass
+
+    files = [img_name_803, img_name_810, img_name_823, img_name_829]
+    for i in range(len(files)):
+        image_name = files[i]
+        image_data = tf.gfile.FastGFile(image_name, 'rb').read()
+        image_data = tf.image.decode_png(image_data)
+        image_data = utils.convert2float(image_data)
+        image_data = image_data.eval()
+        image_data = tf.expand_dims(image_data, 0)
+
+        output = G1.sample(image_data)
+        output = output.eval()
+
+        out_name = 'step_' + str(step) + '_img_' + str(i)
+
+        with open(output_folder + '/' + out_name + '.png', 'wb') as f:
+            f.write(output)
+
+
+def psnr(imageA, imageB):
+    E = imageA.astype("double")/255 - imageB.astype("double")/255
+    N = imageA.shape[0] * imageA.shape[1] * imageA.shape[2]
+    return 10 * math.log10(N / np.sum(np.power(E, 2)))
+
+
 def write_config_file(checkpoints_dir):
     now = datetime.now()
     date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
     with open(checkpoints_dir + '/config.txt', 'w') as c:
-        c.write('LOW RESOLUTION MODEL' + '\n')
+        c.write('LOW RESOLUTION MODEL, L2 NO SQRT' + '\n')
         c.write(date_time + '\n')
         c.write('Batch size:' + str(FLAGS.batch_size) + '\n')
         c.write('Iterations:' + str(FLAGS.max_iter) + '\n')
@@ -131,6 +227,34 @@ def write_config_file(checkpoints_dir):
         c.write('Identity loss term (b2):' + str(FLAGS.b2) + '\n')
         c.write('Total variation loss term (b3):' + str(FLAGS.b3) + '\n')
 
+'''
+def validate(G1):
+    files = [f for f in listdir(FLAGS.input_folder) if isfile(join(FLAGS.input_folder, f))]
+    gt_files = [f for f in listdir(FLAGS.input_gt_folder) if isfile(join(FLAGS.input_gt_folder, f))]
+    psnr = 0
+    rounds = len(files)
+    for i in range(rounds):
+        image_name = files[i]
+        image_data = tf.gfile.FastGFile(FLAGS.input_folder + image_name, 'rb').read()
+        image_data = tf.image.decode_png(image_data)
+        image_data = utils.convert2float(image_data)
+        image_data = image_data.eval()
+        image_data = tf.expand_dims(image_data, 0)
+
+        output = G1.sample(image_data)
+        output = tf.image.decode_png(output)
+        output = output.eval()
+
+        ground_truth = gt_files[i]
+        ground_truth = tf.gfile.FastGFile(FLAGS.input_gt_folder + ground_truth, 'rb').read()
+        ground_truth = tf.image.decode_png(ground_truth)
+        ground_truth = ground_truth.eval()
+
+        psnr_tensor = tf.image.psnr(ground_truth, output, max_val=255)
+        psnr += psnr_tensor.eval()
+
+    return psnr/rounds
+'''
 
 def print_total_parameters():
     total_parameters = 0
@@ -151,3 +275,4 @@ def main(unused_argv):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     tf.app.run()
+

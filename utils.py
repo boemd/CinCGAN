@@ -14,8 +14,7 @@ def convert2float(image):
     """ Transform from int image ([0,255]) to float tensor ([-1.,1.])
     """
     image = tf.image.convert_image_dtype(image, dtype=tf.float32)
-
-    # return (image / 127.5) - 1.0
+    #return (image / 127.5) - 1.0
     return (image*2)-1
 
 

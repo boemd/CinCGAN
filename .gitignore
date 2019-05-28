@@ -5,4 +5,6 @@ __pycache__/
 checkpoints/
 
 #scripts
-prove.py
+pr.py
+*.e
+*.o
