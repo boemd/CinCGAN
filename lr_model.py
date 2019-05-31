@@ -94,14 +94,14 @@ class CleanGAN:
         return G1_loss, G2_loss, D1_loss, fake_y, val_y
 
     def generator_adversarial_loss(self, D1, fake_y):
-        return tf.reduce_mean(tf.squared_difference(D1(fake_y), REAL_LABEL))# * 0.1
+        return tf.reduce_mean(tf.squared_difference(D1(fake_y), REAL_LABEL))
 
     def cycle_consistency_loss(self, G2, fake_y, x):
         return tf.reduce_mean(tf.squared_difference(G2(fake_y), x)) * self.b1
 
     def identity_loss(self, G1, y):
-        return tf.reduce_mean(tf.squared_difference(G1(y), y)) * self.b2
-        # return tf.reduce_mean(tf.abs(G1(y) - y)) * self.b2
+        # return tf.reduce_mean(tf.squared_difference(G1(y), y)) * self.b2
+        return tf.reduce_mean(tf.abs(G1(y) - y)) * self.b2
 
     def total_variation_loss(self, fake_y):
         dx, dy = tf.image.image_gradients(fake_y)

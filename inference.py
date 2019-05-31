@@ -1,10 +1,12 @@
 
 import tensorflow as tf
 from datetime import datetime
+import math
+import numpy as np
 
 FLAGS = tf.flags.FLAGS
 
-tf.flags.DEFINE_string('model', 'checkpoints/lr/20190516-1205/g1.pb', 'model path (.pb)')
+tf.flags.DEFINE_string('model', 'checkpoints/lr/20190531-1616/g1.pb', 'model path (.pb)')
 tf.flags.DEFINE_string('input_folder', '../data/DIV2K/X_validation/', 'input image path (.png)')
 tf.flags.DEFINE_string('input_gt_folder', '../data/DIV2K/X_validation_gt/', 'input image path (.png)')
 tf.flags.DEFINE_string('output_folder', '../data/inference/', 'output images folder')
@@ -50,7 +52,6 @@ def main(unused_argv):
 
     files = [f for f in listdir(FLAGS.input_folder) if isfile(join(FLAGS.input_folder, f))]
     gt_files = [f for f in listdir(FLAGS.input_gt_folder) if isfile(join(FLAGS.input_gt_folder, f))]
-    import matplotlib.pyplot as plt
 
     with tf.Session(graph=graph) as sess:
         for i in range(len(files)):
@@ -71,6 +72,10 @@ def main(unused_argv):
             psnr_ev = psnr.eval()
             psnr_0_ev = psnr_0.eval()
             # plt.imshow(generated)
+
+
+            #psnr_ev = psnr(gt, generated)
+            #psnr_0_ev = psnr(gt, rr)
             avg_psnr += psnr_ev
 
 
@@ -83,6 +88,12 @@ def main(unused_argv):
 
         avg_psnr /= len(files)
         print('Average PSNR: ', avg_psnr)
+
+
+def psnr(imageA, imageB):
+    E = imageA.astype("double")/255 - imageB.astype("double")/255
+    N = imageA.shape[0] * imageA.shape[1] * imageA.shape[2]
+    return 10 * math.log10(N / np.sum(np.power(E, 2)))
 
 
 if __name__ == '__main__':

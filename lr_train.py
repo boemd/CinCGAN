@@ -31,8 +31,8 @@ tf.flags.DEFINE_string('Y', '../data/tfrecords/train_y.tfrecords',
 tf.flags.DEFINE_string('load_model', None,
                        'folder of saved model that you wish to continue training (e.g. 20170602-1936), default: None')
 tf.flags.DEFINE_integer('max_iter', 400000, 'maximum number of iterations during training, default: 400000')
-tf.flags.DEFINE_string('input_folder', '../data/DIV2K/X_validation/', 'validation set')
-tf.flags.DEFINE_string('input_gt_folder', '../data/DIV2K/X_validation_gt/', 'validation ground truth set')
+tf.flags.DEFINE_string('validation_set', '../data/DIV2K/X_validation/', 'validation set')
+tf.flags.DEFINE_string('validation_ground_truth', '../data/DIV2K/X_validation_gt/', 'validation ground truth set')
 
 
 def train():
@@ -99,6 +99,10 @@ def train():
 
         files_sv = [img_name_803, img_name_810, img_name_823, img_name_829]
         rounds_sv = len(files_sv)
+
+        files = [f for f in listdir(FLAGS.validation_set) if isfile(join(FLAGS.validation_set, f))]
+        gt_files = [f for f in listdir(FLAGS.validation_ground_truth) if isfile(join(FLAGS.validation_ground_truth, f))]
+        rounds = len(files)
         ################################################################################################################
 
         try:
@@ -143,21 +147,17 @@ def train():
                     logging.info("Model saved in file: %s" % save_path)
                     ####################################################################################################
                     logging.info('Validating...')
-                    files = [f for f in listdir(FLAGS.input_folder) if isfile(join(FLAGS.input_folder, f))]
-                    gt_files = [f for f in listdir(FLAGS.input_gt_folder) if isfile(join(FLAGS.input_gt_folder, f))]
                     ps = 0
-                    rounds = len(files)
                     for i in range(rounds):
-                        img = cv2.imread(FLAGS.input_gt_folder + files[i])
+                        img = cv2.imread(FLAGS.validation_set + files[i])
                         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                         im1 = np.zeros([1, img.shape[0], img.shape[1], img.shape[2]])
                         im1[0] = img
                         im1 = im1.astype('uint8')
-                        gt = cv2.imread(FLAGS.input_gt_folder + gt_files[i])
+                        gt = cv2.imread(FLAGS.validation_ground_truth + gt_files[i])
                         gt = cv2.cvtColor(gt, cv2.COLOR_BGR2RGB)
                         y = sess.run(val_y, feed_dict={lr_gan.val_x: im1})
                         y = y[0]
-                        y = cv2.cvtColor(y, cv2.COLOR_RGB2BGR)
                         ps += psnr(y, gt)
                     ps /= rounds
                     logging.info('Validation completed. PSNR: {:f}'.format(ps))
@@ -219,7 +219,7 @@ def write_config_file(checkpoints_dir):
     now = datetime.now()
     date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
     with open(checkpoints_dir + '/config.txt', 'w') as c:
-        c.write('LOW RESOLUTION MODEL, L2 NO SQRT' + '\n')
+        c.write('LOW RESOLUTION MODEL' + '\n')
         c.write(date_time + '\n')
         c.write('Batch size:' + str(FLAGS.batch_size) + '\n')
         c.write('Iterations:' + str(FLAGS.max_iter) + '\n')
@@ -227,34 +227,6 @@ def write_config_file(checkpoints_dir):
         c.write('Identity loss term (b2):' + str(FLAGS.b2) + '\n')
         c.write('Total variation loss term (b3):' + str(FLAGS.b3) + '\n')
 
-'''
-def validate(G1):
-    files = [f for f in listdir(FLAGS.input_folder) if isfile(join(FLAGS.input_folder, f))]
-    gt_files = [f for f in listdir(FLAGS.input_gt_folder) if isfile(join(FLAGS.input_gt_folder, f))]
-    psnr = 0
-    rounds = len(files)
-    for i in range(rounds):
-        image_name = files[i]
-        image_data = tf.gfile.FastGFile(FLAGS.input_folder + image_name, 'rb').read()
-        image_data = tf.image.decode_png(image_data)
-        image_data = utils.convert2float(image_data)
-        image_data = image_data.eval()
-        image_data = tf.expand_dims(image_data, 0)
-
-        output = G1.sample(image_data)
-        output = tf.image.decode_png(output)
-        output = output.eval()
-
-        ground_truth = gt_files[i]
-        ground_truth = tf.gfile.FastGFile(FLAGS.input_gt_folder + ground_truth, 'rb').read()
-        ground_truth = tf.image.decode_png(ground_truth)
-        ground_truth = ground_truth.eval()
-
-        psnr_tensor = tf.image.psnr(ground_truth, output, max_val=255)
-        psnr += psnr_tensor.eval()
-
-    return psnr/rounds
-'''
 
 def print_total_parameters():
     total_parameters = 0
