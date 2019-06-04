@@ -73,10 +73,10 @@ def n_res_blocks(input, reuse, is_training=True, n=6):
     return output
 
 
-def resBlock(x, channels=64, kernel_size=[3, 3], scale=1):
-    tmp = slim.conv2d(x, channels, kernel_size, activation_fn=None)
+def resBlock(x, channels=64, kernel_size=[3, 3], scale=1, reuse=True):
+    tmp = slim.conv2d(x, channels, kernel_size, activation_fn=None, reuse=reuse)
     tmp = tf.nn.relu(tmp)
-    tmp = slim.conv2d(tmp, channels, kernel_size, activation_fn=None)
+    tmp = slim.conv2d(tmp, channels, kernel_size, activation_fn=None, reuse=reuse)
     tmp *= scale
     return x + tmp
 
@@ -190,23 +190,23 @@ def _instance_norm(input):
         return scale * normalized + offset
 
 
-def upsample(x, scale=2, features=64, activation=tf.nn.relu):
+def upsample(x, scale=2, features=64, activation=tf.nn.relu, reuse=True):
     assert scale in [2, 3, 4]
-    x = slim.conv2d(x, features, [3, 3], activation_fn=activation)
+    x = slim.conv2d(x, features, [3, 3], activation_fn=activation, reuse=reuse)
     if scale == 2:
         ps_features = 3 * (scale ** 2)
-        x = slim.conv2d(x, ps_features, [3, 3], activation_fn=activation)
+        x = slim.conv2d(x, ps_features, [3, 3], activation_fn=activation, reuse=reuse)
         # x = slim.conv2d_transpose(x,ps_features,6,stride=1,activation_fn=activation)
         x = PS(x, 2, color=True)
     elif scale == 3:
         ps_features = 3 * (scale ** 2)
-        x = slim.conv2d(x, ps_features, [3, 3], activation_fn=activation)
+        x = slim.conv2d(x, ps_features, [3, 3], activation_fn=activation, reuse=reuse)
         # x = slim.conv2d_transpose(x,ps_features,9,stride=1,activation_fn=activation)
         x = PS(x, 3, color=True)
     elif scale == 4:
         ps_features = 3 * (2 ** 2)
         for i in range(2):
-            x = slim.conv2d(x, ps_features, [3, 3], activation_fn=activation)
+            x = slim.conv2d(x, ps_features, [3, 3], activation_fn=activation, reuse=reuse)
             # x = slim.conv2d_transpose(x,ps_features,6,stride=1,activation_fn=activation)
             x = PS(x, 2, color=True)
     return x

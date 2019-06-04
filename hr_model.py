@@ -70,11 +70,9 @@ class ResGAN:
         tf.summary.scalar('loss/total_loss', EDSR_loss)
         tf.summary.scalar('loss/discriminator_loss', D2_loss)
 
-        tf.summary.image('Y/y', utils.batch_convert2int(y))
-        tf.summary.image('Z/EDSR_y', utils.batch_convert2int(fake_z))
-        tf.summary.image('G3/G3_z', utils.batch_convert2int(self.G3(z)))
-
-        tf.summary.image('prev/fake_z', utils.batch_convert2int(self.fake_z))
+        tf.summary.image('Y/y', utils.batch_convert2int(tf.expand_dims(y[0], 0)))
+        tf.summary.image('Z/EDSR_y', utils.batch_convert2int(tf.expand_dims(fake_z[0], 0)))
+        tf.summary.image('G3/G3_z', utils.batch_convert2int(tf.expand_dims(self.G3(z)[0], 0)))
 
         return EDSR_loss, G3_loss, D2_loss, fake_z
 

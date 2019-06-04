@@ -13,7 +13,7 @@ FLAGS = tf.flags.FLAGS
 
 tf.flags.DEFINE_string('load_model', None,
                        'folder of saved model that you wish to continue training (e.g. 20170602-1936), default: None')
-tf.flags.DEFINE_integer('max_iter', 40000, 'maximum number of iterations during training, default: 40000')
+tf.flags.DEFINE_integer('max_iter', 400000, 'maximum number of iterations during training, default: 40000')
 tf.flags.DEFINE_integer('batch_size', 16, 'batch size, default: 16')
 tf.flags.DEFINE_string('train_file', '../data/tfrecords/train_z.tfrecords',
                        'Y tfrecords file for training, default: data/tfrecords/train_z.tfrecords')
@@ -65,11 +65,11 @@ def train():
                     train_writer.add_summary(summary, step)
                     train_writer.flush()
 
-                    if step % 1000 == 0:
+                    if step % 100 == 0:
                         logging.info('-----------Step %d:-------------' % step)
                         logging.info('  loss   : {}'.format(loss_val))
 
-                    if step % 10000 == 0:
+                    if step % 100 == 0:
                         save_path = saver.save(sess, checkpoints_dir + "/model.ckpt", global_step=step)
                         logging.info("Model saved in file: %s" % save_path)
 

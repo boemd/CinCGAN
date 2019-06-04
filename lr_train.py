@@ -179,40 +179,12 @@ def train():
             coord.join(threads)
 
 
-def save_imgs(G1, step, dir):
-    img_name_803 = '../data/DIV2K/X_validation/0803x4.png'
-    img_name_810 = '../data/DIV2K/X_validation/0810x4.png'
-    img_name_823 = '../data/DIV2K/X_validation/0823x4.png'
-    img_name_829 = '../data/DIV2K/X_validation/0829x4.png'
-
-    output_folder = dir + '/samples'
-    try:
-        os.makedirs(output_folder)
-    except os.error:
-        pass
-
-    files = [img_name_803, img_name_810, img_name_823, img_name_829]
-    for i in range(len(files)):
-        image_name = files[i]
-        image_data = tf.gfile.FastGFile(image_name, 'rb').read()
-        image_data = tf.image.decode_png(image_data)
-        image_data = utils.convert2float(image_data)
-        image_data = image_data.eval()
-        image_data = tf.expand_dims(image_data, 0)
-
-        output = G1.sample(image_data)
-        output = output.eval()
-
-        out_name = 'step_' + str(step) + '_img_' + str(i)
-
-        with open(output_folder + '/' + out_name + '.png', 'wb') as f:
-            f.write(output)
 
 
 def psnr(imageA, imageB):
     E = imageA.astype("double")/255 - imageB.astype("double")/255
     N = imageA.shape[0] * imageA.shape[1] * imageA.shape[2]
-    return 10 * math.log10(N / np.sum(np.power(E, 2)))
+    return round(10 * math.log10(N / np.sum(np.power(E, 2))), 4)
 
 
 def write_config_file(checkpoints_dir):

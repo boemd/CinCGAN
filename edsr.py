@@ -6,20 +6,22 @@ import ops
 
 
 class EDSR:
-    def __init__(self, name, is_training, scale=4, num_blocks=32, feature_size=256):
+    def __init__(self, name, is_training=True, scale=4, num_blocks=32, feature_size=256):
         self.name = name
         self.scale = scale
         self.num_blocks = num_blocks
         self.feature_size = feature_size
         self.reuse = False
-        self.is_training = is_training
+        #self.is_training = is_training
+        self.is_training = tf.placeholder_with_default(True, shape=[], name='is_training')
 
     def __call__(self, input):
         with tf.variable_scope(self.name):
-            mean = tf.reduce_mean(input)
+            #mean = tf.reduce_mean(input)
+            mean = 127.5
             inp = tf.subtract(input, mean)
 
-            x = slim.conv2d(inp, self.feature_size, [3, 3])
+            x = slim.conv2d(inp, self.feature_size, [3, 3], reuse=self.reuse)
 
             # Store the output of the first convolution to add later
             conv_1 = x
@@ -28,25 +30,33 @@ class EDSR:
 
             # Add the residual blocks to the model
             for i in range(self.num_blocks):
-                x = ops.resBlock(x, self.feature_size, scale=scaling_factor)
+                x = ops.resBlock(x, self.feature_size, scale=scaling_factor, reuse=self.reuse)
 
                 # One more convolution, and then we add the output of our first conv layer
-            x = slim.conv2d(x, self.feature_size, [3, 3])
+            x = slim.conv2d(x, self.feature_size, [3, 3], reuse=self.reuse)
             x += conv_1
 
             # Upsample output of the convolution
-            x = ops.upsample(x, self.scale, self.feature_size, None)
+            x = ops.upsample(x, self.scale, self.feature_size, None, reuse=self.reuse)
 
             # One final convolution on the upsampling output
             output = x  # slim.conv2d(x,output_channels,[3,3])
             ret = tf.clip_by_value(output + mean, 0.0, 255.0)
+            self.reuse = True
             self.variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=self.name)
             return ret
 
-    def model(self, train_file, batch_size):
+    def sample(self, input_img):
+        #image = utils.batch_convert2int(self.__call__(input_img))
+        image = tf.image.encode_png(tf.squeeze(self.__call__(input_img), [0]))
+        return image
+
+    def model(self, train_file='', batch_size=1):
         reader = Reader(train_file, name='f', batch_size=batch_size, crop_size=48, scale=4)
 
-        x, y, _ = reader.pair_feed()
+        x, y, _ = reader.pair_feed()  # float, already cropped
+        x = tf.to_float(utils.batch_convert2int(x))
+        y = tf.to_float(utils.batch_convert2int(y))
 
         fake_y = self.__call__(x)
 
@@ -62,8 +72,9 @@ class EDSR:
         tf.summary.scalar("MSE", mse)
         tf.summary.scalar("PSNR", PSNR)
 
-        tf.summary.image('LR', utils.batch_convert2int(x))
-        tf.summary.image('HR', utils.batch_convert2int(fake_y))
+        tf.summary.image('EDSR/input', tf.expand_dims(x[0], 0))
+        tf.summary.image('EDSR/output', tf.expand_dims(fake_y[0], 0))
+        tf.summary.image('EDSR/ground_truth', tf.expand_dims(y[0], 0))
 
         return loss
 
