@@ -4,6 +4,7 @@ from reader import Reader
 from discriminator1 import Discriminator1
 from generator12 import Generator12
 import random
+import numpy as np
 
 REAL_LABEL = 0.9
 
@@ -56,7 +57,8 @@ class CleanGAN:
 
         gan_loss = self.generator_adversarial_loss(self.D1, fake_y)
         cyc_loss = self.cycle_consistency_loss(self.G2, fake_y, x)
-        idt_loss = self.identity_loss(self.G1, y)
+        #idt_loss = self.identity_loss(self.G1, y)
+        idt_loss, ima, imb = self.identity_sm_loss(self.G1, y)
         ttv_loss = self.total_variation_loss(fake_y)
         dis_loss = self.discriminator_adversarial_loss(self.D1, y, self.fake_y)
 
@@ -85,6 +87,9 @@ class CleanGAN:
         tf.summary.scalar('loss/discriminator_loss', D1_loss)
         tf.summary.scalar('psnr/validation', self.psnr_validation)
 
+        tf.summary.image('A/y', utils.batch_convert2int(tf.expand_dims(ima[0], 0)))
+        tf.summary.image('A/gy', utils.batch_convert2int(tf.expand_dims(imb[0], 0)))
+
         tf.summary.image('X/x', utils.batch_convert2int(tf.expand_dims(x[0], 0)))
         tf.summary.image('X/G1_fakey', utils.batch_convert2int(tf.expand_dims(self.G2(fake_y)[0], 0)))
         tf.summary.image('Y/G1_x', utils.batch_convert2int(tf.expand_dims(fake_y[0], 0)))
@@ -103,9 +108,35 @@ class CleanGAN:
         # return tf.reduce_mean(tf.squared_difference(G1(y), y)) * self.b2
         return tf.reduce_mean(tf.abs(G1(y) - y)) * self.b2
 
+    def identity_sm_loss(self, G1, y, size=2, mean=1.0, std=3.0):
+        def smooth(image, size=2, mean=1.0, std=5.0):
+            d = tf.distributions.Normal(mean, std)
+
+            vals = d.prob(tf.range(start=-size, limit=size + 1, dtype=tf.float32))
+
+            gauss_kernel = tf.einsum('i,j->ij',
+                                     vals,
+                                     vals)
+
+            kernel = gauss_kernel / tf.reduce_sum(gauss_kernel)
+            zeros = np.zeros([1 + 2 * size, 1 + 2 * size])
+            kernel_ch1 = tf.stack([kernel, zeros, zeros], axis=2)
+            kernel_ch2 = tf.stack([zeros, kernel, zeros], axis=2)
+            kernel_ch3 = tf.stack([zeros, zeros, kernel], axis=2)
+            kernel_3d = tf.stack([kernel_ch1, kernel_ch2, kernel_ch3], axis=3)
+
+            ret = tf.nn.conv2d(image, kernel_3d, strides=[1, 1, 1, 1], padding="SAME")
+
+            return ret
+
+        sy = smooth(y, size, mean, std)
+        sg1y = smooth(G1(y), size, mean, std)
+        return tf.reduce_mean(tf.abs(sg1y - sy)) * self.b2, sy, sg1y
+
     def total_variation_loss(self, fake_y):
-        dx, dy = tf.image.image_gradients(fake_y)
-        return tf.reduce_mean(tf.square(dx) + tf.square(dy)) * self.b3
+        # dx, dy = tf.image.image_gradients(fake_y)
+        # return tf.reduce_mean(tf.square(dx) + tf.square(dy)) * self.b3
+        return tf.reduce_mean(tf.image.total_variation(fake_y)) * self.b3
 
     def discriminator_adversarial_loss(self, D1, y, fake_y):
         error_real = tf.reduce_mean(tf.squared_difference(D1(y), REAL_LABEL))

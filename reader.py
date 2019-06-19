@@ -1,6 +1,5 @@
 import tensorflow as tf
 import utils
-import matplotlib.pyplot as plt
 import numpy as np
 import random
 
@@ -213,6 +212,7 @@ def test_pick():
                                                  reader1.im2p: gt_v,
                                                  reader1.height: h,
                                                  reader1.width: w})
+                '''
                 plt.figure(1)
                 plt.subplot(211)
                 plt.imshow(im_vv)
@@ -222,6 +222,7 @@ def test_pick():
 
 
                 plt.show()
+                '''
                 step += 1
 
         except KeyboardInterrupt:
@@ -258,7 +259,7 @@ def test_reader():
                 batch_img, batch_gt, aa, bb = sess.run([imgint, gtint, a, b])
                 print(aa)
                 print(bb)
-
+                '''
                 plt.figure(1)
                 plt.subplot(231)
                 plt.imshow(batch_img[0])
@@ -280,7 +281,7 @@ def test_reader():
 
                 plt.show()
                 step += 1
-
+                '''
         except KeyboardInterrupt:
             print('Interrupted')
             coord.request_stop()

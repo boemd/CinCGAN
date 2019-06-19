@@ -6,8 +6,8 @@ import ops
 
 
 class EDSR:
-    def __init__(self, name, is_training=True, scale=4, num_blocks=32, feature_size=256):
-        self.name = name
+    def __init__(self, name='', is_training=True, scale=4, num_blocks=32, feature_size=256):
+        #self.name = name
         self.scale = scale
         self.num_blocks = num_blocks
         self.feature_size = feature_size
@@ -16,47 +16,46 @@ class EDSR:
         self.is_training = tf.placeholder_with_default(True, shape=[], name='is_training')
 
     def __call__(self, input):
-        with tf.variable_scope(self.name):
-            #mean = tf.reduce_mean(input)
-            mean = 127.5
-            inp = tf.subtract(input, mean)
+        #with tf.variable_scope(name_or_scope=self.name):
+        mean = 127.5
+        inp = tf.subtract(input, mean)
 
-            x = slim.conv2d(inp, self.feature_size, [3, 3], reuse=self.reuse)
+        x = slim.conv2d(inp, self.feature_size, [3, 3], reuse=self.reuse)
 
-            # Store the output of the first convolution to add later
-            conv_1 = x
+        # Store the output of the first convolution to add later
+        conv_1 = x
 
-            scaling_factor = 0.1
+        scaling_factor = 0.1
 
-            # Add the residual blocks to the model
-            for i in range(self.num_blocks):
-                x = ops.resBlock(x, self.feature_size, scale=scaling_factor, reuse=self.reuse)
+        # Add the residual blocks to the model
+        for i in range(self.num_blocks):
+            x = ops.resBlock(x, self.feature_size, scale=scaling_factor, reuse=self.reuse)
 
-                # One more convolution, and then we add the output of our first conv layer
-            x = slim.conv2d(x, self.feature_size, [3, 3], reuse=self.reuse)
-            x += conv_1
+            # One more convolution, and then we add the output of our first conv layer
+        x = slim.conv2d(x, self.feature_size, [3, 3], reuse=self.reuse)
+        x += conv_1
 
-            # Upsample output of the convolution
-            x = ops.upsample(x, self.scale, self.feature_size, None, reuse=self.reuse)
+        # Upsample output of the convolution
+        x = ops.upsample(x, self.scale, self.feature_size, None, reuse=self.reuse)
 
-            # One final convolution on the upsampling output
-            output = x  # slim.conv2d(x,output_channels,[3,3])
-            ret = tf.clip_by_value(output + mean, 0.0, 255.0)
-            self.reuse = True
-            self.variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=self.name)
-            return ret
+        # One final convolution on the upsampling output
+        output = x  # slim.conv2d(x,output_channels,[3,3])
+        ret = tf.clip_by_value(output + mean, 0.0, 255.0)
+        self.reuse = True
+        #self.variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=self.name)
+        return ret
 
     def sample(self, input_img):
-        #image = utils.batch_convert2int(self.__call__(input_img))
-        image = tf.image.encode_png(tf.squeeze(self.__call__(input_img), [0]))
+        out = tf.squeeze(self.__call__(input_img), [0])
+        image = tf.image.encode_png(out)
         return image
 
     def model(self, train_file='', batch_size=1):
-        reader = Reader(train_file, name='f', batch_size=batch_size, crop_size=48, scale=4)
+        reader = Reader(train_file, name='f', batch_size=batch_size, crop_size=48, scale=self.scale)
 
         x, y, _ = reader.pair_feed()  # float, already cropped
         x = tf.to_float(utils.batch_convert2int(x))
-        y = tf.to_float(utils.batch_convert2int(y))
+        y = tf.to_float(utils.batch_convert2int(y)) # tf.to_float(
 
         fake_y = self.__call__(x)
 

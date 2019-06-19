@@ -45,13 +45,24 @@ def c3s1_k(input, k, reuse=False, activation='leaky', slope=0.2, is_training=Tru
         return output
 
 
+def dec(input, k, reuse=False, is_training=True, scale=4, name='deconv'):
+    with tf.variable_scope(name, reuse=reuse):
+        weights = _weights("weights",
+                           shape=[3, 3, k, input.get_shape()[3]])
+
+        sh = input.get_shape().as_list()
+        conv = tf.nn.conv2d_transpose(input, weights, output_shape=[sh[0], sh[1]*scale, sh[2]*scale, sh[3]],
+                                      strides=[1, 1, 1, 1], padding='SAME')
+        return conv
+
+
 def c3s2_k(input, k, reuse=False, activation='leaky', slope=0.2, is_training=True, name='c7s1_k'):
     with tf.variable_scope(name, reuse=reuse):
         weights = _weights("weights",
                            shape=[3, 3, input.get_shape()[3], k])
 
         conv = tf.nn.conv2d(input, weights,
-                            strides=[1, 2, 2, 1], padding='VALID')
+                            strides=[1, 2, 2, 1], padding='SAME')
 
         if activation == 'relu':
             output = tf.nn.relu(conv)
@@ -79,6 +90,14 @@ def resBlock(x, channels=64, kernel_size=[3, 3], scale=1, reuse=True):
     tmp = slim.conv2d(tmp, channels, kernel_size, activation_fn=None, reuse=reuse)
     tmp *= scale
     return x + tmp
+
+
+def resBlock_t(x, channels=64, kernel_size=3, scale=1, reuse=True, is_training=True, name='block'):
+    t = c3s1_k(x, channels, reuse, activation='relu', is_training=is_training, name=name+'_conv1')
+    t = c3s1_k(t, channels, reuse, activation='', is_training=is_training, name=name+'_conv2')
+    t *= scale
+    return x+t
+
 
 
 def log10(x):
@@ -217,15 +236,20 @@ def _phase_shift(I, r):
     Borrowed from https://github.com/tetrachrome/subpixel
     Used for subpixel phase shifting after deconv operations
     """
+    '''
     bsize, a, b, c = I.get_shape().as_list()
-    bsize = tf.shape(I)[0] # Handling Dimension(None) type for undefined batch dim
+    bsize = tf.shape(I)[0]  # Handling Dimension(None) type for undefined dimensions
+    #a = tf.shape(I)[1]
+    #b = tf.shape(I)[2]
     X = tf.reshape(I, (bsize, a, b, r, r))
     X = tf.transpose(X, (0, 1, 2, 4, 3))  # bsize, a, b, 1, 1
     X = tf.split(X, a, 1)  # a, [bsize, b, r, r]
-    X = tf.concat([tf.squeeze(x, axis=1) for x in X],2)  # bsize, b, a*r, r
+    X = tf.concat([tf.squeeze(x, axis=1) for x in X], 2)  # bsize, b, a*r, r
     X = tf.split(X, b, 1)  # b, [bsize, a*r, r]
-    X = tf.concat([tf.squeeze(x, axis=1) for x in X],2)  # bsize, a*r, b*r
+    X = tf.concat([tf.squeeze(x, axis=1) for x in X], 2)  # bsize, a*r, b*r
     return tf.reshape(X, (bsize, a*r, b*r, 1))
+    '''
+    return tf.depth_to_space(I, r)
 
 
 def PS(X, r, color=False):
@@ -235,7 +259,7 @@ def PS(X, r, color=False):
     """
     if color:
         Xc = tf.split(X, 3, 3)
-        X = tf.concat([_phase_shift(x, r) for x in Xc],3)
+        X = tf.concat([_phase_shift(x, r) for x in Xc], 3)
     else:
         X = _phase_shift(X, r)
     return X
