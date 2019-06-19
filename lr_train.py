@@ -119,7 +119,6 @@ def train():
                     )
                 )
 
-
                 train_writer.add_summary(summary, step)
                 train_writer.flush()
 
