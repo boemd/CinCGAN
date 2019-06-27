@@ -3,10 +3,11 @@ import tensorflow as tf
 from datetime import datetime
 import math
 import numpy as np
+import cv2
 
 FLAGS = tf.flags.FLAGS
 
-tf.flags.DEFINE_string('model', 'checkpoints/lr/20190531-1616/g1.pb', 'model path (.pb)')
+tf.flags.DEFINE_string('model', 'checkpoints/lr/20190625-1219/g1.pb', 'model path (.pb)')
 tf.flags.DEFINE_string('input_folder', '../data/DIV2K/X_validation/', 'input image path (.png)')
 tf.flags.DEFINE_string('input_gt_folder', '../data/DIV2K/X_validation_gt/', 'input image path (.png)')
 tf.flags.DEFINE_string('output_folder', '../data/inference/', 'output images folder')
@@ -34,7 +35,6 @@ def main(unused_argv):
     output_folder = FLAGS.output_folder + "/{}".format(current_time)
     print(output_folder)
     print('#'*30)
-    avg_psnr = 0
 
     graph = load_graph(FLAGS.model)
     input_image = graph.get_tensor_by_name('prefix/input_image:0')  # uint8
@@ -54,7 +54,18 @@ def main(unused_argv):
     gt_files = [f for f in listdir(FLAGS.input_gt_folder) if isfile(join(FLAGS.input_gt_folder, f))]
 
     with tf.Session(graph=graph) as sess:
+        ps = 0
         for i in range(len(files)):
+            img = cv2.imread(FLAGS.input_folder + files[i])
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            img = img.astype('uint8')
+            generated = output_image.eval(feed_dict={input_image: img})
+            gt = cv2.imread(FLAGS.input_gt_folder + gt_files[i])
+            gt = cv2.cvtColor(gt, cv2.COLOR_BGR2RGB)
+            ps_i = psnr(generated, gt)
+            ps_0 = psnr(img, gt)
+            ps += ps_i
+            '''
             image_name = files[i]
             image_data = tf.gfile.FastGFile(FLAGS.input_folder + image_name, 'rb').read()
             image_data = tf.image.decode_png(image_data)
@@ -78,16 +89,19 @@ def main(unused_argv):
             #psnr_0_ev = psnr(gt, rr)
             avg_psnr += psnr_ev
 
-
             with open(output_folder + '/' + image_name[0:-4] + '.png', 'wb') as f:
                 f.write(to_write)
+            '''
+            to_save = cv2.cvtColor(generated, cv2.COLOR_RGB2BGR)
+            name = output_folder + '/' + files[i]
+            cv2.imwrite(name, to_save)
+            print('Elaborated file {0:3d}/{1:3d}.'.format(i + 1, len(files)),
+                  '  PSNR:{0:2.4f}'.format(ps_i),
+                  '  Improvement: {0:1.4f}'.format(ps_i/ps_0 - 1))
 
-            print('Elaborated file {0:2d}/{1:3d}.'.format(i + 1, len(files)),
-                  '  PSNR:{0:2.4f}'.format(psnr_ev),
-                  '  Improvement: {0:1.4f}'.format(psnr_ev/psnr_0_ev - 1))
+        ps = ps / len(files)
 
-        avg_psnr /= len(files)
-        print('Average PSNR: ', avg_psnr)
+        print('Average PSNR: ', ps)
 
 
 def psnr(imageA, imageB):

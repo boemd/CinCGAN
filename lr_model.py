@@ -44,7 +44,6 @@ class CleanGAN:
         self.val_x = tf.placeholder(tf.uint8, shape=[1, None, None, 3])
 
 
-
     def model(self):
         X_reader = Reader(self.X_train_file, name='X', batch_size=self.batch_size)
         Y_reader = Reader(self.Y_train_file, name='Y', batch_size=self.batch_size)
@@ -57,8 +56,8 @@ class CleanGAN:
 
         gan_loss = self.generator_adversarial_loss(self.D1, fake_y)
         cyc_loss = self.cycle_consistency_loss(self.G2, fake_y, x)
-        #idt_loss = self.identity_loss(self.G1, y)
-        idt_loss, ima, imb = self.identity_sm_loss(self.G1, y)
+        idt_loss = self.identity_loss(self.G1, y)
+        #idt_loss, ima, imb = self.identity_sm_loss(self.G1, y)
         ttv_loss = self.total_variation_loss(fake_y)
         dis_loss = self.discriminator_adversarial_loss(self.D1, y, self.fake_y)
 
@@ -66,9 +65,6 @@ class CleanGAN:
         G2_loss = cyc_loss
         D1_loss = dis_loss
 
-        ################################################################################################################
-
-        #val_y = tf.squeeze(utils.batch_convert2int(self.G1(tf.expand_dims(utils.convert2float(self.val_x), 0))), [0])
         v1 = utils.batch_convert2float(self.val_x)
         v2 = self.G1(v1)
         val_y = utils.batch_convert2int(v2)
@@ -79,24 +75,24 @@ class CleanGAN:
         tf.summary.histogram('D1/fake', self.D1(self.G1(x)))
         tf.summary.histogram('G1/loss', gan_loss)
 
-        tf.summary.scalar('loss/gan', gan_loss)
-        tf.summary.scalar('loss/cycle_consistency', cyc_loss)
-        tf.summary.scalar('loss/identity', idt_loss)
-        tf.summary.scalar('loss/total_variation', ttv_loss)
-        tf.summary.scalar('loss/total_loss', G1_loss)
-        tf.summary.scalar('loss/discriminator_loss', D1_loss)
-        tf.summary.scalar('psnr/validation', self.psnr_validation)
+        tf.summary.scalar('lr_loss/gan', gan_loss)
+        tf.summary.scalar('lr_loss/cycle_consistency', cyc_loss)
+        tf.summary.scalar('lr_loss/identity', idt_loss)
+        tf.summary.scalar('lr_loss/total_variation', ttv_loss)
+        tf.summary.scalar('lr_loss/total_loss', G1_loss)
+        tf.summary.scalar('lr_loss/discriminator_loss', D1_loss)
+        tf.summary.scalar('lr_psnr/validation', self.psnr_validation)
 
-        tf.summary.image('A/y', utils.batch_convert2int(tf.expand_dims(ima[0], 0)))
-        tf.summary.image('A/gy', utils.batch_convert2int(tf.expand_dims(imb[0], 0)))
+        # tf.summary.image('A/y', utils.batch_convert2int(tf.expand_dims(ima[0], 0)))
+        # tf.summary.image('A/gy', utils.batch_convert2int(tf.expand_dims(imb[0], 0)))
 
-        tf.summary.image('X/x', utils.batch_convert2int(tf.expand_dims(x[0], 0)))
-        tf.summary.image('X/G1_fakey', utils.batch_convert2int(tf.expand_dims(self.G2(fake_y)[0], 0)))
-        tf.summary.image('Y/G1_x', utils.batch_convert2int(tf.expand_dims(fake_y[0], 0)))
+        # tf.summary.image('X/x', utils.batch_convert2int(tf.expand_dims(x[0], 0)))
+        # tf.summary.image('X/G1_fakey', utils.batch_convert2int(tf.expand_dims(self.G2(fake_y)[0], 0)))
+        # tf.summary.image('Y/G1_x', utils.batch_convert2int(tf.expand_dims(fake_y[0], 0)))
 
-        tf.summary.image('prev/fake_y', utils.batch_convert2int(tf.expand_dims(self.fake_y[0], 0)))
+        # tf.summary.image('prev/fake_y', utils.batch_convert2int(tf.expand_dims(self.fake_y[0], 0)))
 
-        return G1_loss, G2_loss, D1_loss, fake_y, val_y
+        return G1_loss, G2_loss, D1_loss, val_y, x, fake_y  # last 2 added
 
     def generator_adversarial_loss(self, D1, fake_y):
         return tf.reduce_mean(tf.squared_difference(D1(fake_y), REAL_LABEL))
@@ -108,7 +104,7 @@ class CleanGAN:
         # return tf.reduce_mean(tf.squared_difference(G1(y), y)) * self.b2
         return tf.reduce_mean(tf.abs(G1(y) - y)) * self.b2
 
-    def identity_sm_loss(self, G1, y, size=2, mean=1.0, std=3.0):
+    def identity_sm_loss(self, G1, y, size=1, mean=1.0, std=3.0):
         def smooth(image, size=2, mean=1.0, std=5.0):
             d = tf.distributions.Normal(mean, std)
 
@@ -134,9 +130,9 @@ class CleanGAN:
         return tf.reduce_mean(tf.abs(sg1y - sy)) * self.b2, sy, sg1y
 
     def total_variation_loss(self, fake_y):
-        # dx, dy = tf.image.image_gradients(fake_y)
-        # return tf.reduce_mean(tf.square(dx) + tf.square(dy)) * self.b3
-        return tf.reduce_mean(tf.image.total_variation(fake_y)) * self.b3
+        dx, dy = tf.image.image_gradients(fake_y)
+        return tf.reduce_mean(tf.square(dx) + tf.square(dy)) * self.b3
+        # return tf.reduce_mean(tf.image.total_variation(fake_y)) * self.b3
 
     def discriminator_adversarial_loss(self, D1, y, fake_y):
         error_real = tf.reduce_mean(tf.squared_difference(D1(y), REAL_LABEL))

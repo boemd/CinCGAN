@@ -151,7 +151,7 @@ def _weights(name, shape, mean=0.0, stddev=0.02):
         name: name of the variable
         shape: list of ints
         mean: mean of a Gaussian
-      s tddev: standard deviation of a Gaussian
+        stddev: standard deviation of a Gaussian
     Returns:
         A trainable variable
     """
@@ -228,6 +228,17 @@ def upsample(x, scale=2, features=64, activation=tf.nn.relu, reuse=True):
             x = slim.conv2d(x, ps_features, [3, 3], activation_fn=activation, reuse=reuse)
             # x = slim.conv2d_transpose(x,ps_features,6,stride=1,activation_fn=activation)
             x = PS(x, 2, color=True)
+    return x
+
+
+def upsample4(x, features=64, activation=tf.nn.relu, reuse=False, is_training=True, name='ups4'):
+    #x = slim.conv2d(x, features, [3, 3], activation_fn=activation, reuse=reuse)
+    x = c3s1_k(x, features, reuse=reuse, activation='relu', is_training=is_training, name=name+'_conv0')
+    ps_features = 3 * (2 ** 2)
+    for i in range(2):
+        #x = slim.conv2d(x, ps_features, [3, 3], activation_fn=activation, reuse=reuse)
+        x = c3s1_k(x, ps_features, reuse=reuse, activation='relu', is_training=is_training, name=name + '_conv'+str(i))
+        x = PS(x, 2, color=True)
     return x
 
 

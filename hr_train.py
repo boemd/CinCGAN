@@ -32,7 +32,7 @@ tf.flags.DEFINE_integer('max_iter', 400000, 'maximum number of iterations during
 def train():
     if FLAGS.load_model is not None:
         # load the specified model
-        checkpoints_dir = "checkpoints/hr/" + FLAGS.load_model.lstrip("checkpoints/")
+        checkpoints_dir = "checkpoints/hr/" + FLAGS.load_model.lstrip("checkpoints/hr")
     else:
         # create checkpoint directory
         current_time = datetime.now().strftime("%Y%m%d-%H%M")
