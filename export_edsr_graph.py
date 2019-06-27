@@ -7,7 +7,7 @@ import utils
 
 FLAGS = tf.flags.FLAGS
 
-tf.flags.DEFINE_string('checkpoint_dir', 'checkpoints/edsr/20190619-1146', 'checkpoints directory path')
+tf.flags.DEFINE_string('checkpoint_dir', 'checkpoints/edsr/20190621-1429', 'checkpoints directory path')
 tf.flags.DEFINE_string('model', 'edsr.pb', 'Model name, default: edsr.pb')
 tf.flags.DEFINE_integer('image_size', None, 'image size, default: None')
 

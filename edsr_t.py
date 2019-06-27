@@ -29,7 +29,18 @@ class EDSR:
 
             #x = ops.dec(x+conv_1, k=self.feature_size, reuse=self.reuse, is_training=self.is_training,
                         #scale=self.scale, name='deconv')
-            x = ops.upsample(x+conv_1, self.scale, self.feature_size, None, reuse=self.reuse)
+            #x = ops.upsample(x+conv_1, self.scale, self.feature_size, None, reuse=self.reuse)
+            #x = ops.upsample4(x, features=self.feature_size, activation='relu', reuse=self.reuse, is_training=self.is_training, name='ups4')
+            ############################################################################################################
+            x = ops.c3s1_k(x, self.feature_size, reuse=self.reuse, activation='relu', is_training=self.is_training, name='ups' + '_conv_init')
+            ps_features = 3 * (2 ** 2)
+            for i in range(2):
+                # x = slim.conv2d(x, ps_features, [3, 3], activation_fn=activation, reuse=reuse)
+                x = ops.c3s1_k(x, ps_features, reuse=self.reuse, activation='relu', is_training=self.is_training,
+                           name='ups' + '_conv' + str(i))
+                x = ops.PS(x, 2, color=True)
+
+            ############################################################################################################
 
             x = ops.c3s1_k(input=x, k=3, is_training=self.is_training,
                            reuse=self.reuse, name='edsr_conv_03', activation='')

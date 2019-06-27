@@ -8,3 +8,5 @@ checkpoints/
 pr.py
 *.e
 *.o
+*.bat
+*.txt

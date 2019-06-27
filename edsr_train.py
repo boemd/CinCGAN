@@ -11,7 +11,7 @@ os.environ["CUDA_VISIBLE_DEVICES"]="2";
 '''
 FLAGS = tf.flags.FLAGS
 
-tf.flags.DEFINE_string('load_model', 'aaa',
+tf.flags.DEFINE_string('load_model', 'checkpoints/edsr/20190621-1429',
                        'folder of saved model that you wish to continue training (e.g. 20170602-1936), default: None')
 tf.flags.DEFINE_integer('max_iter', 400000, 'maximum number of iterations during training, default: 40000')
 tf.flags.DEFINE_integer('batch_size', 16, 'batch size, default: 16')
@@ -43,11 +43,13 @@ def train():
 
     with tf.Session(graph=graph) as sess:
         if FLAGS.load_model is not None:
+            sess.run(tf.global_variables_initializer())
+            latest_ckpt = tf.train.latest_checkpoint(checkpoints_dir)
+            saver.restore(sess, latest_ckpt)
             checkpoint = tf.train.get_checkpoint_state(checkpoints_dir)
             meta_graph_path = checkpoint.model_checkpoint_path + ".meta"
-            restore = tf.train.import_meta_graph(meta_graph_path)
-            restore.restore(sess, tf.train.latest_checkpoint(checkpoints_dir))
             step = int(meta_graph_path.split("-")[2].split(".")[0])
+            flag_resume = True
         else:
             sess.run(tf.global_variables_initializer())
             step = 0
