@@ -57,6 +57,7 @@ def train():
         saver = tf.train.Saver()
 
     with tf.Session(graph=graph) as sess:
+        flag_restore = False
         if FLAGS.load_model is not None:
             sess.run(tf.global_variables_initializer())
             latest_ckpt = tf.train.latest_checkpoint(checkpoints_dir)
@@ -96,7 +97,7 @@ def train():
                     save_path = saver.save(sess, checkpoints_dir + "/model.ckpt", global_step=step)
                     logging.info("Model saved in file: %s" % save_path)
                     if FLAGS.validate:
-                        validate(ed, val_y, sess)
+                        ps = validate(ed, val_y, sess)
 
                 step += 1
         except KeyboardInterrupt:
@@ -125,11 +126,12 @@ def validate(ed, val_y, sess):
         im1 = np.zeros([1, img.shape[0], img.shape[1], img.shape[2]])
         im1[0] = img
         im1 = im1.astype('uint8')
-        y = sess.run(val_y, feed_dict={ed.val_x: im1})
+        y = val_y.eval(feed_dict={ed.val_x: im1})
         y = y[0]
         ps += psnr(y, gt)
     ps /= rounds
     logging.info('Validation completed. PSNR: {:f}'.format(ps))
+    return ps
 
 
 def psnr(imageA, imageB):

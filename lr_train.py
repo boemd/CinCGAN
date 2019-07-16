@@ -88,6 +88,7 @@ def train():
             print(latest_ckpt)
             saver.restore(sess, latest_ckpt)
             checkpoint = tf.train.get_checkpoint_state(checkpoints_dir)
+
             meta_graph_path = checkpoint.model_checkpoint_path + ".meta"
             step = int(meta_graph_path.split("-")[2].split(".")[0])
             flag_resume = True
@@ -133,7 +134,7 @@ def train():
                     save_path = saver.save(sess, checkpoints_dir + "/model.ckpt", global_step=step)
                     logging.info("Model saved in file: %s" % save_path)
                     if FLAGS.validate:
-                        validate(sess, lr_gan, val_y)
+                        ps = validate(sess, lr_gan, val_y)
 
                 step += 1
         except KeyboardInterrupt:
@@ -144,7 +145,6 @@ def train():
         finally:
             save_path = saver.save(sess, checkpoints_dir + "/model.ckpt", global_step=step)
             logging.info("Model saved in file: %s" % save_path)
-            print
             # When done, ask the threads to stop.
             coord.request_stop()
             coord.join(threads)
@@ -164,11 +164,12 @@ def validate(sess, lr_gan, val_y):
         im1 = im1.astype('uint8')
         gt = cv2.imread(FLAGS.validation_ground_truth + gt_files[i])
         gt = cv2.cvtColor(gt, cv2.COLOR_BGR2RGB)
-        y = sess.run(val_y, feed_dict={lr_gan.val_x: im1})
+        y = val_y.eval(feed_dict={lr_gan.val_x: im1})
         y = y[0]
         ps += psnr(y, gt)
     ps /= rounds
     logging.info('Validation completed. PSNR: {:f}'.format(ps))
+    return ps
 
 
 def save_samples(checkpoints_dir, step, lr_gan, val_y, sess):

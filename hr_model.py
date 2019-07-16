@@ -37,9 +37,9 @@ class ResGAN:
         self.EDSR = EDSR('edsr', self.is_training)
         self.G3 = Generator3('G3', self.is_training)
         self.D2 = Discriminator2('D2', self.is_training)
-        self.x = tf.placeholder(tf.float32, shape=[batch_size, None, None, 3])
-        self.y = tf.placeholder(tf.float32, shape=[batch_size, None, None, 3])
-        self.fake_z = tf.placeholder(tf.float32, shape=[batch_size, None, None, 3])
+        self.x = tf.placeholder(tf.float32, shape=[self.batch_size, None, None, 3])  # real x from data
+        self.y = tf.placeholder(tf.float32, shape=[self.batch_size, None, None, 3])  # fake y from inner GAN
+        self.fake_z = tf.placeholder(tf.float32, shape=[self.batch_size, None, None, 3])  # previously generated sample
 
     def model(self):
         Z_reader = Reader(self.Z_train_file, name='Z', batch_size=self.batch_size, crop_size=128)

@@ -104,7 +104,7 @@ class CleanGAN:
         # return tf.reduce_mean(tf.squared_difference(G1(y), y)) * self.b2
         return tf.reduce_mean(tf.abs(G1(y) - y)) * self.b2
 
-    def identity_sm_loss(self, G1, y, size=1, mean=1.0, std=3.0):
+    def identity_sm_loss(self, G1, y, size=1, mean=1.0, std=1.0):
         def smooth(image, size=2, mean=1.0, std=5.0):
             d = tf.distributions.Normal(mean, std)
 

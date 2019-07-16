@@ -32,7 +32,7 @@ class E_mod:
         reader = Reader(self.train_file, name='f', batch_size=self.batch_size, crop_size=48, scale=self.scale)
 
         x, y, _ = reader.pair_feed()  # float, already cropped
-        x = tf.to_float(utils.batch_convert2int(x))
+        x = tf.to_float(utils.batch_convert2int(x))   # 0 255 ma float
         y = tf.to_float(utils.batch_convert2int(y))  # tf.to_float(
 
         val_y = self.edsr(tf.to_float(self.val_x))
