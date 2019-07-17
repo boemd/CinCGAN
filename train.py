@@ -48,7 +48,8 @@ tf.flags.DEFINE_string('validation_ground_truth_z', '../data/DIV2K/Z_validation/
 
 
 # pre-trained models
-tf.flags.DEFINE_string('load_CinCGAN_model', None, 'folder of the saved complete model')
+tf.flags.DEFINE_string('load_CinCGAN_model', 'checkpoints/joint/20190716-1159/model.ckpt-103',
+                       'folder of the saved complete model')
 tf.flags.DEFINE_string('load_CleanGAN_model', None, 'folder of the saved CinCGAN model')
 tf.flags.DEFINE_string('load_ResGAN_model', None, 'folder of the saved ResGAN model')
 '''
@@ -181,16 +182,16 @@ def train():
                 train_writer.add_summary(summary, step)
                 train_writer.flush()
 
-                if step % 1 == 0:
-                    logging.info('-----------Step %d:-------------' % step)
-                    logging.info('  G1_loss   : {}'.format(G1_loss_val))
-                    logging.info('  G2_loss   : {}'.format(G2_loss_val))
-                    logging.info('  D1_loss   : {}'.format(D1_loss_val))
-                    logging.info('  EDSR_loss   : {}'.format(EDSR_loss_val))
-                    logging.info('  G3_loss   : {}'.format(G3_loss_val))
-                    logging.info('  D2_loss   : {}'.format(D2_loss_val))
+                if step % 10 == 0:
+                    print('-----------Step %d:-------------' % step)
+                    print('  G1_loss   : {}'.format(G1_loss_val))
+                    print('  G2_loss   : {}'.format(G2_loss_val))
+                    print('  D1_loss   : {}'.format(D1_loss_val))
+                    print('  EDSR_loss   : {}'.format(EDSR_loss_val))
+                    print('  G3_loss   : {}'.format(G3_loss_val))
+                    print('  D2_loss   : {}'.format(D2_loss_val))
 
-                if step % 10000 == 0:
+                if step % 100 == 0:
                     save_path = saver.save(sess, checkpoints_dir + "/model.ckpt", global_step=step)
                     logging.info("Model saved in file: %s" % save_path)
                     if FLAGS.validate:
