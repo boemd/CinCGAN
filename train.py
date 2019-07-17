@@ -66,7 +66,11 @@ tf.flags.DEFINE_bool('save_samples', False, 'samples flag, default: False')
 def train():
     combine = False
     if FLAGS.load_CinCGAN_model is not None:
-        checkpoints_dir = "checkpoints/joint/" + FLAGS.load_CinCGAN_model.lstrip("checkpoints/joint")
+        #checkpoints_dir = "checkpoints/joint/" + FLAGS.load_CinCGAN_model.lstrip("checkpoints/joint")
+        checkpoints_dir = FLAGS.load_CinCGAN_model
+        checkpoints_dir = checkpoints_dir.split('/')
+        checkpoints_dir.pop()
+        checkpoints_dir = '/'.join(checkpoints_dir) + '/'
     else:
 
         # create checkpoint directory
