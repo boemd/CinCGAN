@@ -48,10 +48,9 @@ tf.flags.DEFINE_string('validation_ground_truth_z', '../data/DIV2K/Z_validation/
 
 
 # pre-trained models
-tf.flags.DEFINE_string('load_CinCGAN_model', 'checkpoints/joint/20190716-1159/model.ckpt-103',
-                       'folder of the saved complete model')
-tf.flags.DEFINE_string('load_CleanGAN_model', None, 'folder of the saved CinCGAN model')
-tf.flags.DEFINE_string('load_ResGAN_model', None, 'folder of the saved ResGAN model')
+tf.flags.DEFINE_string('load_CinCGAN_model', None, 'folder of the saved complete model')
+tf.flags.DEFINE_string('load_CleanGAN_model', 'checkpoints/lr/20190625-1219/model.ckpt-8000', 'folder of the saved CinCGAN model')
+tf.flags.DEFINE_string('load_EDSR_model', 'D:/tesisti/Boem/CinCGAN/checkpoints/edsr/20190621-1429/model.ckpt-170000', 'folder of the saved EDSR model')
 '''
 tf.flags.DEFINE_string('load_CinCGAN_model', None, 'folder of the saved complete model')
 tf.flags.DEFINE_string('load_CleanGAN_model', 'checkpoints/lr/20190625-1219/model.ckpt-8000', 'folder of the saved CinCGAN model')
@@ -81,9 +80,20 @@ def train():
         except os.error:
             pass
 
-        if FLAGS.load_CleanGAN_model is not None and FLAGS.load_ResGAN_model is not None:
-            checkpoints_LR_dir = "checkpoints/lr/" + FLAGS.load_CleanGAN_model.lstrip("checkpoints/lr/")
-            checkpoints_HR_dir = "checkpoints/hr/" + FLAGS.load_ResGAN_model.lstrip("checkpoints/hr/")
+        if FLAGS.load_CleanGAN_model is not None and FLAGS.load_EDSR_model is not None:
+            #checkpoints_LR_dir = "checkpoints/lr/" + FLAGS.load_CleanGAN_model.lstrip("checkpoints/lr/")
+            checkpoints_LR_dir = FLAGS.load_CleanGAN_model
+            checkpoints_LR_dir = checkpoints_LR_dir.split('/')
+            checkpoints_LR_dir.pop()
+            checkpoints_LR_dir = '/'.join(checkpoints_LR_dir) + '/'
+
+            #checkpoints_HR_dir = "checkpoints/hr/" + FLAGS.load_EDSR_model.lstrip("checkpoints/hr/")
+            checkpoints_HR_dir = FLAGS.load_EDSR_model
+            checkpoints_HR_dir = checkpoints_HR_dir.split('/')
+            checkpoints_HR_dir.pop()
+            checkpoints_HR_dir = '/'.join(checkpoints_HR_dir) + '/'
+
+
             combine = True
 
     # create a logger
