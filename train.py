@@ -48,13 +48,14 @@ tf.flags.DEFINE_string('validation_ground_truth_z', '../data/DIV2K/Z_validation/
 
 
 # pre-trained models
-tf.flags.DEFINE_string('load_CinCGAN_model', None, 'folder of the saved complete model')
+tf.flags.DEFINE_string('load_CinCGAN_model', None,
+                       'folder of the saved complete model')
 tf.flags.DEFINE_string('load_CleanGAN_model', 'checkpoints/lr/20190625-1219/model.ckpt-8000', 'folder of the saved CinCGAN model')
-tf.flags.DEFINE_string('load_EDSR_model', 'D:/tesisti/Boem/CinCGAN/checkpoints/edsr/20190621-1429/model.ckpt-170000', 'folder of the saved EDSR model')
+tf.flags.DEFINE_string('load_EDSR_model', 'checkpoints/edsr/20190621-1429/model.ckpt-8000', 'folder of the saved EDSR model')
 '''
 tf.flags.DEFINE_string('load_CinCGAN_model', None, 'folder of the saved complete model')
 tf.flags.DEFINE_string('load_CleanGAN_model', 'checkpoints/lr/20190625-1219/model.ckpt-8000', 'folder of the saved CinCGAN model')
-tf.flags.DEFINE_string('load_EDSR_model', 'checkpoints/hr/model.ckpt-0', 'folder of the saved ResGAN model')
+tf.flags.DEFINE_string('load_EDSR_model', 'checkpoints/hr/model.ckpt-0', 'folder of the saved EDSR model')
 '''
 
 # others
@@ -145,6 +146,8 @@ def train():
         train_writer = tf.summary.FileWriter(checkpoints_dir, graph)
         saver = tf.train.Saver(tot_variables)
 
+        saver0 = tf.train.Saver(lr_variables)
+
     flag_resume = False
     with tf.Session(graph=graph) as sess:
         if FLAGS.load_CinCGAN_model is not None:
@@ -155,8 +158,8 @@ def train():
             logger.info('Starting from a pre-trained model. Step: {}.'.format(step))
         elif combine:
             sess.run(tf.global_variables_initializer())
-            saver.restore(sess, FLAGS.load_CleanGAN_model)
-            saver.restore(sess, FLAGS.load_ResGAN_model)
+            saver0.restore(sess, FLAGS.load_CleanGAN_model)
+            #saver.restore(sess, FLAGS.load_ResGAN_model)
             step = 0
         else:
             sess.run(tf.global_variables_initializer())

@@ -70,7 +70,7 @@ class CinCGAN:
         Y_reader = Reader(self.Y_train_file, name='Y', batch_size=self.batch_size)
         Z_reader = Reader(self.Z_train_file, name='Z', batch_size=self.batch_size, crop_size=128)
 
-        seed = 1234#random.seed()
+        seed = 1234  # random.seed()
         x, _, _, _ = X_reader.feed(seed)
         y, _, _, _ = Y_reader.feed(seed)
         z, _, _, _ = Z_reader.feed(seed)
