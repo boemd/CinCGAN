@@ -28,7 +28,7 @@ tf.flags.DEFINE_string('load_model', None,
                        'folder of saved model that you wish to continue training (e.g. checkpoints/edsr/20190625-1405), default: None')
 tf.flags.DEFINE_integer('max_iter', 1000000, 'maximum number of iterations during training, default: 400000')
 tf.flags.DEFINE_string('validation_set', '../data/DIV2K/Z_test/', 'validation set')
-tf.flags.DEFINE_boolean('validate', True, 'validation flag, default: True')
+tf.flags.DEFINE_boolean('validate', False, 'validation flag, default: True')
 
 
 def train():
@@ -89,11 +89,11 @@ def train():
                 train_writer.add_summary(summary, step)
                 train_writer.flush()
 
-                if step % 1000 == 0:
+                if step % 10 == 0:
                     logging.info('-----------Step %d:-------------' % step)
                     logging.info('  loss   : {}'.format(loss_val))
 
-                if step % 10000 == 0:
+                if step % 100 == 0:
                     save_path = saver.save(sess, checkpoints_dir + "/model.ckpt", global_step=step)
                     logging.info("Model saved in file: %s" % save_path)
                     if FLAGS.validate:

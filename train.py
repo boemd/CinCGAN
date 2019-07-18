@@ -49,8 +49,8 @@ tf.flags.DEFINE_string('validation_ground_truth_z', '../data/DIV2K/Z_validation/
 
 # pre-trained models
 tf.flags.DEFINE_string('load_CinCGAN_model', None, 'folder of the saved complete model')
-tf.flags.DEFINE_string('load_CleanGAN_model', 'checkpoints/lr/20190625-1219/model.ckpt-8000', 'folder of the saved CinCGAN model')
-tf.flags.DEFINE_string('load_EDSR_model', 'checkpoints/edsr/20190621-1429/model.ckpt-8000', 'folder of the saved EDSR model')
+tf.flags.DEFINE_string('load_CleanGAN_model', 'checkpoints/lr/20190624-1117-main/model.ckpt-50000', 'folder of the saved CinCGAN model')
+tf.flags.DEFINE_string('load_EDSR_model', 'checkpoints/edsr/20190718-1028/model.ckpt-2000', 'folder of the saved EDSR model')
 '''
 tf.flags.DEFINE_string('load_CinCGAN_model', None, 'folder of the saved complete model')
 tf.flags.DEFINE_string('load_CleanGAN_model', 'checkpoints/lr/20190625-1219/model.ckpt-8000', 'folder of the saved CinCGAN model')
@@ -58,7 +58,7 @@ tf.flags.DEFINE_string('load_EDSR_model', 'checkpoints/hr/model.ckpt-0', 'folder
 '''
 
 # others
-tf.flags.DEFINE_bool('validate', True, 'validation flag, default: True')
+tf.flags.DEFINE_bool('validate', False, 'validation flag, default: True')
 tf.flags.DEFINE_bool('save_samples', False, 'samples flag, default: False')
 
 
@@ -112,6 +112,9 @@ def train():
     logger.addHandler(handler)
     write_config_file(checkpoints_dir)
 
+    a=3
+    a=a*3
+    b=a
 
     graph = tf.Graph()
     with graph.as_default():
@@ -145,7 +148,8 @@ def train():
         train_writer = tf.summary.FileWriter(checkpoints_dir, graph)
         saver = tf.train.Saver(tot_variables)
 
-        saver0 = tf.train.Saver(lr_variables)
+        saver_lr = tf.train.Saver(lr_variables)
+        saver_edsr = tf.train.Saver(cin.EDSR.variables)
 
     flag_resume = False
     with tf.Session(graph=graph) as sess:
@@ -157,7 +161,8 @@ def train():
             logger.info('Starting from a pre-trained model. Step: {}.'.format(step))
         elif combine:
             sess.run(tf.global_variables_initializer())
-            saver0.restore(sess, FLAGS.load_CleanGAN_model)
+            saver_lr.restore(sess, FLAGS.load_CleanGAN_model)
+            saver_edsr.restore(sess, FLAGS.load_EDSR_model)
             #saver.restore(sess, FLAGS.load_ResGAN_model)
             step = 0
         else:
