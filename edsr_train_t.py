@@ -24,7 +24,7 @@ tf.flags.DEFINE_float('beta2', 0.999, 'momentum term of Adam, default: 0.999')
 tf.flags.DEFINE_float('epsilon', 1e-8, 'constant for numerical stability of Adam, default: 1e-8')
 tf.flags.DEFINE_string('Z', '../data/tfrecords/train_z.tfrecords',
                        'Z tfrecords file for training, default: data/tfrecords/train_z.tfrecords')
-tf.flags.DEFINE_string('load_model', 'checkpoints/edsr/20190625-1405',
+tf.flags.DEFINE_string('load_model', None,
                        'folder of saved model that you wish to continue training (e.g. checkpoints/edsr/20190625-1405), default: None')
 tf.flags.DEFINE_integer('max_iter', 1000000, 'maximum number of iterations during training, default: 400000')
 tf.flags.DEFINE_string('validation_set', '../data/DIV2K/Z_test/', 'validation set')
@@ -57,7 +57,7 @@ def train():
         saver = tf.train.Saver()
 
     with tf.Session(graph=graph) as sess:
-        flag_restore = False
+        flag_resume = False
         if FLAGS.load_model is not None:
             sess.run(tf.global_variables_initializer())
             latest_ckpt = tf.train.latest_checkpoint(checkpoints_dir)

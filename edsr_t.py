@@ -15,9 +15,9 @@ class EDSR:
 
     def __call__(self, input):
         with tf.variable_scope(self.name):
-            mean = 127.5
-            inp = tf.subtract(input, mean)
-            x = ops.c3s1_k(input=inp, k=self.feature_size, is_training=self.is_training,
+            #mean = 127.5
+            #inp = tf.subtract(input, mean)
+            x = ops.c3s1_k(input=input, k=self.feature_size, is_training=self.is_training,
                            reuse=self.reuse, name='edsr_conv_01', activation='')
             conv_1 = x
             for i in range(self.num_blocks):
@@ -45,7 +45,8 @@ class EDSR:
             x = ops.c3s1_k(input=x, k=3, is_training=self.is_training,
                            reuse=self.reuse, name='edsr_conv_03', activation='')
 
-            out = tf.clip_by_value(x + mean, 0.0, 255.0)
+            #out = tf.clip_by_value(x + mean, 0.0, 255.0)
+            out = tf.clip_by_value(x, -1.0, 1.0)
 
             self.reuse = True
             self.variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=self.name)
@@ -54,7 +55,7 @@ class EDSR:
 
     def sample(self, input_img):
         image = self.__call__(tf.to_float(input_img))
-        image = tf.image.convert_image_dtype(image/255, dtype=tf.uint8)
+        image = tf.image.convert_image_dtype((image+1)/2, dtype=tf.uint8)  #########
         image = tf.image.encode_png(tf.squeeze(image, [0]))
         return image
 

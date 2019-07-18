@@ -32,8 +32,8 @@ class E_mod:
         reader = Reader(self.train_file, name='f', batch_size=self.batch_size, crop_size=48, scale=self.scale)
 
         x, y, _ = reader.pair_feed()  # float, already cropped
-        x = tf.to_float(utils.batch_convert2int(x))   # 0 255 ma float
-        y = tf.to_float(utils.batch_convert2int(y))  # tf.to_float(
+        # x = tf.to_float(utils.batch_convert2int(x))   # 0 255 ma float
+        # y = tf.to_float(utils.batch_convert2int(y))  # tf.to_float(
 
         val_y = self.edsr(tf.to_float(self.val_x))
 
@@ -52,9 +52,9 @@ class E_mod:
         tf.summary.scalar("metrics/PSNR", PSNR)
         tf.summary.scalar('psnr/validation', self.psnr_validation)
 
-        tf.summary.image('EDSR/input', tf.expand_dims(x[0], 0))
-        tf.summary.image('EDSR/output', tf.expand_dims(fake_y[0], 0))
-        tf.summary.image('EDSR/ground_truth', tf.expand_dims(y[0], 0))
+        tf.summary.image('EDSR/input', utils.batch_convert2int(tf.expand_dims(x[0], 0)))
+        tf.summary.image('EDSR/output', utils.batch_convert2int(tf.expand_dims(fake_y[0], 0)))
+        tf.summary.image('EDSR/ground_truth', utils.batch_convert2int(tf.expand_dims(y[0], 0)))
 
         return loss, val_y
 
