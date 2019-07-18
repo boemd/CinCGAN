@@ -124,6 +124,10 @@ class CinCGAN:
         tf.summary.scalar('hr_loss/total_loss', EDSR_loss)
         tf.summary.scalar('hr_loss/discriminator_loss', D2_loss)
 
+        tf.summary.image('LR/x', utils.batch_convert2int(tf.expand_dims(x[0], 0)))
+        tf.summary.image('LR/fake_y', utils.batch_convert2int(tf.expand_dims(fake_y[0], 0)))
+        tf.summary.image('HR/fake_z', utils.batch_convert2int(tf.expand_dims(fake_z[0], 0)))
+
         tf.summary.scalar('psnr/validation_y', self.psnr_validation_y)
         tf.summary.scalar('psnr/validation_z', self.psnr_validation_z)
 
@@ -179,7 +183,9 @@ class CinCGAN:
         #new_shape = tf.slice(tf.shape(z), [1], [2])
         #z_sub = tf.image.resize_bicubic(z, [32, 32], method=tf.ResizeMethodV1.BICUBIC)
         z_sub = tf.image.resize_bicubic(z, [32, 32])
-        return tf.reduce_sum(tf.squared_difference(EDSR(z_sub), z))
+        # loss = tf.reduce_sum(tf.squared_difference(EDSR(z_sub), z))
+        loss = tf.reduce_mean(tf.squared_difference(EDSR(z_sub), z))
+        return loss
 
     def optimize(self, G1_loss, G2_loss, D1_loss, EDSR_loss, G3_loss, D2_loss):
         def make_optimizer(loss, variables, name='Adam'):

@@ -48,13 +48,13 @@ tf.flags.DEFINE_string('validation_ground_truth_z', '../data/DIV2K/Z_validation/
 
 
 # pre-trained models
-tf.flags.DEFINE_string('load_CinCGAN_model', None, 'folder of the saved complete model')
+tf.flags.DEFINE_string('load_CinCGAN_model', 'checkpoints/joint/20190718-1146/model.ckpt-100', 'folder of the saved complete model')
+tf.flags.DEFINE_string('load_CleanGAN_model', None, 'folder of the saved CinCGAN model')
+tf.flags.DEFINE_string('load_EDSR_model', None, 'folder of the saved EDSR model')
+'''
+tf.flags.DEFINE_string('load_CinCGAN_model', 'checkpoints/joint/20190718-1146/model.ckpt-100', 'folder of the saved complete model')
 tf.flags.DEFINE_string('load_CleanGAN_model', 'checkpoints/lr/20190624-1117-main/model.ckpt-50000', 'folder of the saved CinCGAN model')
 tf.flags.DEFINE_string('load_EDSR_model', 'checkpoints/edsr/20190718-1028/model.ckpt-2000', 'folder of the saved EDSR model')
-'''
-tf.flags.DEFINE_string('load_CinCGAN_model', None, 'folder of the saved complete model')
-tf.flags.DEFINE_string('load_CleanGAN_model', 'checkpoints/lr/20190625-1219/model.ckpt-8000', 'folder of the saved CinCGAN model')
-tf.flags.DEFINE_string('load_EDSR_model', 'checkpoints/hr/model.ckpt-0', 'folder of the saved EDSR model')
 '''
 
 # others
@@ -112,10 +112,6 @@ def train():
     logger.addHandler(handler)
     write_config_file(checkpoints_dir)
 
-    a=3
-    a=a*3
-    b=a
-
     graph = tf.Graph()
     with graph.as_default():
         cin = CinCGAN(
@@ -146,7 +142,7 @@ def train():
 
         summary_op = tf.summary.merge_all()
         train_writer = tf.summary.FileWriter(checkpoints_dir, graph)
-        saver = tf.train.Saver(tot_variables)
+        saver = tf.train.Saver()
 
         saver_lr = tf.train.Saver(lr_variables)
         saver_edsr = tf.train.Saver(cin.EDSR.variables)
@@ -163,7 +159,6 @@ def train():
             sess.run(tf.global_variables_initializer())
             saver_lr.restore(sess, FLAGS.load_CleanGAN_model)
             saver_edsr.restore(sess, FLAGS.load_EDSR_model)
-            #saver.restore(sess, FLAGS.load_ResGAN_model)
             step = 0
         else:
             sess.run(tf.global_variables_initializer())
@@ -205,12 +200,12 @@ def train():
 
                 if step % 10 == 0:
                     print('-----------Step %d:-------------' % step)
-                    print('  G1_loss   : {}'.format(G1_loss_val))
-                    print('  G2_loss   : {}'.format(G2_loss_val))
-                    print('  D1_loss   : {}'.format(D1_loss_val))
+                    print('  G1_loss     : {}'.format(G1_loss_val))
+                    print('  G2_loss     : {}'.format(G2_loss_val))
+                    print('  D1_loss     : {}'.format(D1_loss_val))
                     print('  EDSR_loss   : {}'.format(EDSR_loss_val))
-                    print('  G3_loss   : {}'.format(G3_loss_val))
-                    print('  D2_loss   : {}'.format(D2_loss_val))
+                    print('  G3_loss     : {}'.format(G3_loss_val))
+                    print('  D2_loss     : {}'.format(D2_loss_val))
 
                 if step % 100 == 0:
                     save_path = saver.save(sess, checkpoints_dir + "/model.ckpt", global_step=step)
