@@ -90,9 +90,9 @@ class CinCGAN:
         ttv_loss_hr = self.total_variation_loss(fake_z) * self.l3
         dis_loss_hr = self.discriminator_adversarial_loss(self.D2, z, self.fake_z)
 
-        G1_loss = (gan_loss_lr + cyc_loss_lr + idt_loss_lr + ttv_loss_lr)
-        G2_loss = cyc_loss_lr
-        D1_loss = dis_loss_lr
+        G1_loss = (gan_loss_hr + cyc_loss_hr + idt_loss_hr + ttv_loss_hr)
+        G2_loss = cyc_loss_lr * 0
+        D1_loss = dis_loss_lr * 0
 
         EDSR_loss = (gan_loss_hr + cyc_loss_hr + idt_loss_hr + ttv_loss_hr)
         G3_loss = cyc_loss_hr

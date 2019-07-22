@@ -14,6 +14,7 @@ class CleanGAN:
                  X_train_file='',
                  Y_train_file='',
                  batch_size=2,
+                 b0=1,
                  b1=10,
                  b2=5,
                  b3=0.5,
@@ -26,6 +27,7 @@ class CleanGAN:
         self.Y_train_file = Y_train_file
         self.batch_size = batch_size
         self.learning_rate = learning_rate
+        self.b0 = b0
         self.b1 = b1
         self.b2 = b2
         self.b3 = b3
@@ -57,7 +59,7 @@ class CleanGAN:
         gan_loss = self.generator_adversarial_loss(self.D1, fake_y)
         cyc_loss = self.cycle_consistency_loss(self.G2, fake_y, x)
         idt_loss = self.identity_loss(self.G1, y)
-        #idt_loss, ima, imb = self.identity_sm_loss(self.G1, y)
+        # idt_loss, ima, imb = self.identity_sm_loss(self.G1, y)
         ttv_loss = self.total_variation_loss(fake_y)
         dis_loss = self.discriminator_adversarial_loss(self.D1, y, self.fake_y)
 
@@ -95,7 +97,7 @@ class CleanGAN:
         return G1_loss, G2_loss, D1_loss, val_y, x, fake_y  # last 2 added
 
     def generator_adversarial_loss(self, D1, fake_y):
-        return tf.reduce_mean(tf.squared_difference(D1(fake_y), REAL_LABEL))
+        return tf.reduce_mean(tf.squared_difference(D1(fake_y), REAL_LABEL)) * self.b0
 
     def cycle_consistency_loss(self, G2, fake_y, x):
         return tf.reduce_mean(tf.squared_difference(G2(fake_y), x)) * self.b1
@@ -104,15 +106,13 @@ class CleanGAN:
         # return tf.reduce_mean(tf.squared_difference(G1(y), y)) * self.b2
         return tf.reduce_mean(tf.abs(G1(y) - y)) * self.b2
 
-    def identity_sm_loss(self, G1, y, size=1, mean=1.0, std=1.0):
-        def smooth(image, size=2, mean=1.0, std=5.0):
+    def identity_sm_loss(self, G1, y, size=1, mean=1.0, std=0.5):  # sz = 3 * std
+        def smooth(image, size=size, mean=mean, std=std):
             d = tf.distributions.Normal(mean, std)
 
             vals = d.prob(tf.range(start=-size, limit=size + 1, dtype=tf.float32))
 
-            gauss_kernel = tf.einsum('i,j->ij',
-                                     vals,
-                                     vals)
+            gauss_kernel = tf.einsum('i,j->ij', vals, vals)
 
             kernel = gauss_kernel / tf.reduce_sum(gauss_kernel)
             zeros = np.zeros([1 + 2 * size, 1 + 2 * size])

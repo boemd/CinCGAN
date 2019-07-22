@@ -18,7 +18,8 @@ FLAGS = tf.flags.FLAGS
 
 tf.flags.DEFINE_integer('batch_size', 16, 'batch size, default: 16')
 tf.flags.DEFINE_bool('validate', True, 'validation flag, default: True')
-tf.flags.DEFINE_bool('save_samples', False, 'samples flag, default: False')
+tf.flags.DEFINE_bool('save_samples', True, 'samples flag, default: False')
+tf.flags.DEFINE_float('b0', 0.1, 'weight for adversarial loss, default: 1')
 tf.flags.DEFINE_float('b1', 10, 'weight for cycle consistency loss, default: 10')
 tf.flags.DEFINE_float('b2', 5, 'weight for identity loss, default: 5')
 tf.flags.DEFINE_float('b3', 0.5, 'weight for total variation loss, default: 0.5')
@@ -30,7 +31,7 @@ tf.flags.DEFINE_string('X', '../data/tfrecords/train_x.tfrecords',
                        'X tfrecords file for training, default: data/tfrecords/train_x.tfrecords')
 tf.flags.DEFINE_string('Y', '../data/tfrecords/train_y.tfrecords',
                        'Y tfrecords file for training, default: data/tfrecords/train_y.tfrecords')
-tf.flags.DEFINE_string('load_model', 'checkpoints/lr/20190625-1219',
+tf.flags.DEFINE_string('load_model', None,
                        'folder of saved model that you wish to continue training (e.g. checkpoints/lr/20190625-1144), default: None')
 tf.flags.DEFINE_integer('max_iter', 400000, 'maximum number of iterations during training, default: 400000')
 tf.flags.DEFINE_string('validation_set', '../data/DIV2K/X_validation/', 'validation set')
@@ -58,6 +59,7 @@ def train():
             X_train_file=FLAGS.X,
             Y_train_file=FLAGS.Y,
             batch_size=FLAGS.batch_size,
+            b0=FLAGS.b0,
             b1=FLAGS.b1,
             b2=FLAGS.b2,
             b3=FLAGS.b3,
@@ -122,7 +124,7 @@ def train():
                 train_writer.add_summary(summary, step)
                 train_writer.flush()
 
-                if step % 100 == 0:
+                if step % 1000 == 0:
                     logging.info('-----------Step %d:-------------' % step)
                     logging.info('  G1_loss   : {}'.format(G1_loss_val))
                     logging.info('  G2_loss   : {}'.format(G2_loss_val))
@@ -130,7 +132,7 @@ def train():
                     if FLAGS.save_samples:
                         save_samples(checkpoints_dir, step, lr_gan, val_y, sess)
 
-                if step % 1000 == 0:
+                if step % 10000 == 0:
                     save_path = saver.save(sess, checkpoints_dir + "/model.ckpt", global_step=step)
                     logging.info("Model saved in file: %s" % save_path)
                     if FLAGS.validate:

@@ -9,6 +9,7 @@ from os.path import isfile, join
 import cv2
 import numpy as np
 import math
+from tqdm import tqdm
 
 '''
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID";
@@ -65,7 +66,6 @@ tf.flags.DEFINE_bool('save_samples', False, 'samples flag, default: False')
 def train():
     combine = False
     if FLAGS.load_CinCGAN_model is not None:
-        #checkpoints_dir = "checkpoints/joint/" + FLAGS.load_CinCGAN_model.lstrip("checkpoints/joint")
         checkpoints_dir = FLAGS.load_CinCGAN_model
         checkpoints_dir = checkpoints_dir.split('/')
         checkpoints_dir.pop()
@@ -81,18 +81,15 @@ def train():
             pass
 
         if FLAGS.load_CleanGAN_model is not None and FLAGS.load_EDSR_model is not None:
-            #checkpoints_LR_dir = "checkpoints/lr/" + FLAGS.load_CleanGAN_model.lstrip("checkpoints/lr/")
             checkpoints_LR_dir = FLAGS.load_CleanGAN_model
             checkpoints_LR_dir = checkpoints_LR_dir.split('/')
             checkpoints_LR_dir.pop()
             checkpoints_LR_dir = '/'.join(checkpoints_LR_dir) + '/'
 
-            #checkpoints_HR_dir = "checkpoints/hr/" + FLAGS.load_EDSR_model.lstrip("checkpoints/hr/")
             checkpoints_HR_dir = FLAGS.load_EDSR_model
             checkpoints_HR_dir = checkpoints_HR_dir.split('/')
             checkpoints_HR_dir.pop()
             checkpoints_HR_dir = '/'.join(checkpoints_HR_dir) + '/'
-
 
             combine = True
 
@@ -139,7 +136,6 @@ def train():
         hr_variables = cin.EDSR.variables + cin.G3.variables + cin.D2.variables
         tot_variables = lr_variables + hr_variables
 
-
         summary_op = tf.summary.merge_all()
         train_writer = tf.summary.FileWriter(checkpoints_dir, graph)
         saver = tf.train.Saver()
@@ -152,7 +148,6 @@ def train():
         if FLAGS.load_CinCGAN_model is not None:
             sess.run(tf.global_variables_initializer())
             saver.restore(sess, FLAGS.load_CinCGAN_model)
-            # get step
             step = int(FLAGS.load_CinCGAN_model.split('-')[2])
             logger.info('Starting from a pre-trained model. Step: {}.'.format(step))
         elif combine:
@@ -230,7 +225,6 @@ def train():
 
 
 def validate(logger, cin, val_y, val_z):
-    '''
     files = [f for f in listdir(FLAGS.validation_set) if isfile(join(FLAGS.validation_set, f))]
     gt_y_files = [f for f in listdir(FLAGS.validation_ground_truth_y) if isfile(join(FLAGS.validation_ground_truth_y, f))]
     gt_z_files = [f for f in listdir(FLAGS.validation_ground_truth_z) if isfile(join(FLAGS.validation_ground_truth_z, f))]
@@ -238,7 +232,7 @@ def validate(logger, cin, val_y, val_z):
     logger.info('Validating...')
     ps_y = 0
     ps_z = 0
-    for i in range(rounds):
+    for i in tqdm(range(rounds)):
         img = cv2.imread(FLAGS.validation_set + files[i])
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         im1 = np.zeros([1, img.shape[0], img.shape[1], img.shape[2]])
@@ -261,8 +255,7 @@ def validate(logger, cin, val_y, val_z):
     ps_z /= rounds
     logger.info('Validation completed. PSNR: {:f}'.format(ps_y))
     return ps_y, ps_z
-    '''
-    return 0, 0
+
 
 
 def psnr(imageA, imageB):
