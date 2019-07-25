@@ -1,8 +1,8 @@
 import tensorflow as tf
-import utils
-from reader import Reader
-from edsr_t import EDSR
-import ops
+import helpers.utils as utils
+from helpers.reader import Reader
+from super_resolution.edsr import EDSR
+import helpers.ops as ops
 
 REAL_LABEL = 0.9
 

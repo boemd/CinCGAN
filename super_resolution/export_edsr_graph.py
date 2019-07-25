@@ -1,13 +1,13 @@
 import tensorflow as tf
 import os
 from tensorflow.python.tools.freeze_graph import freeze_graph
-from edsr_t import EDSR
-from model_edsr import E_mod
-import utils
+from super_resolution.edsr import EDSR
+from super_resolution.edsr_model import E_mod
+import helpers.utils as utils
 
 FLAGS = tf.flags.FLAGS
 
-tf.flags.DEFINE_string('checkpoint_dir', 'checkpoints/edsr/20190621-1429', 'checkpoints directory path')
+tf.flags.DEFINE_string('checkpoint_dir', '../checkpoints/edsr/20190723-1610', 'checkpoints directory path')
 tf.flags.DEFINE_string('model', 'edsr.pb', 'Model name, default: edsr.pb')
 tf.flags.DEFINE_integer('image_size', None, 'image size, default: None')
 

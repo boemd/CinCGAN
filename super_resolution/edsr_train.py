@@ -1,8 +1,7 @@
 import tensorflow as tf
-from model_edsr import E_mod
+from super_resolution.edsr_model import E_mod
 from datetime import datetime
 import os
-import utils
 import logging
 from os import listdir, makedirs, error
 from os.path import isfile, join
@@ -22,23 +21,23 @@ tf.flags.DEFINE_float('learning_rate', 0.0001, 'initial learning rate for Adam, 
 tf.flags.DEFINE_float('beta1', 0.5, 'momentum term of Adam, default: 0.5')
 tf.flags.DEFINE_float('beta2', 0.999, 'momentum term of Adam, default: 0.999')
 tf.flags.DEFINE_float('epsilon', 1e-8, 'constant for numerical stability of Adam, default: 1e-8')
-tf.flags.DEFINE_string('Z', '../data/tfrecords/train_z.tfrecords',
+tf.flags.DEFINE_string('Z', '../../data/tfrecords/train_z.tfrecords',
                        'Z tfrecords file for training, default: data/tfrecords/train_z.tfrecords')
 tf.flags.DEFINE_string('load_model', None,
                        'folder of saved model that you wish to continue training (e.g. checkpoints/edsr/20190625-1405), default: None')
 tf.flags.DEFINE_integer('max_iter', 1000000, 'maximum number of iterations during training, default: 400000')
-tf.flags.DEFINE_string('validation_set', '../data/DIV2K/Z_test/', 'validation set')
-tf.flags.DEFINE_boolean('validate', False, 'validation flag, default: True')
+tf.flags.DEFINE_string('validation_set', '../../data/DIV2K/Z_test/', 'validation set')
+tf.flags.DEFINE_boolean('validate', True, 'validation flag, default: True')
 
 
 def train():
     if FLAGS.load_model is not None:
         # load the specified model
-        checkpoints_dir = "checkpoints/edsr/" + FLAGS.load_model.lstrip("checkpoints/edsr")
+        checkpoints_dir = "../checkpoints/edsr/" + FLAGS.load_model.lstrip("../checkpoints/edsr")
     else:
         # create checkpoint directory
         current_time = datetime.now().strftime("%Y%m%d-%H%M")
-        checkpoints_dir = "checkpoints/edsr/{}".format(current_time)
+        checkpoints_dir = "../checkpoints/edsr/{}".format(current_time)
         try:
             os.makedirs(checkpoints_dir)
         except os.error:
@@ -89,11 +88,11 @@ def train():
                 train_writer.add_summary(summary, step)
                 train_writer.flush()
 
-                if step % 10 == 0:
+                if step % 1000 == 0:
                     logging.info('-----------Step %d:-------------' % step)
                     logging.info('  loss   : {}'.format(loss_val))
 
-                if step % 100 == 0:
+                if step % 10000 == 0:
                     save_path = saver.save(sess, checkpoints_dir + "/model.ckpt", global_step=step)
                     logging.info("Model saved in file: %s" % save_path)
                     if FLAGS.validate:
@@ -134,10 +133,10 @@ def validate(ed, val_y, sess):
     return ps
 
 
-def psnr(imageA, imageB):
-    E = imageA.astype("double")/255 - imageB.astype("double")/255
-    N = imageA.shape[0] * imageA.shape[1] * imageA.shape[2]
-    return round(10 * math.log10(N / np.sum(np.power(E, 2))), 4)
+def psnr(image_a, image_b):
+    e = image_a.astype("double") - image_b.astype("double")
+    n = image_a.shape[0] * image_a.shape[1] * image_a.shape[2]
+    return round(10 * math.log10(n / np.sum(np.power(e, 2))), 4)
 
 
 def print_total_parameters():

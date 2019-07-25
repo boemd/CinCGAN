@@ -1,12 +1,12 @@
 import tensorflow as tf
 import os
 from tensorflow.python.tools.freeze_graph import freeze_graph
-from lr_model import CleanGAN
-import utils
+from inner_cycle.lr_model import CleanGAN
+import helpers.utils as utils
 
 FLAGS = tf.flags.FLAGS
 
-tf.flags.DEFINE_string('checkpoint_dir', 'checkpoints/lr/20190625-1219', 'checkpoints directory path')
+tf.flags.DEFINE_string('checkpoint_dir', '../checkpoints/lr/20190723-1528', 'checkpoints directory path')
 tf.flags.DEFINE_string('XtoY_model', 'g1.pb', 'XtoY model name, default: g1.pb')
 tf.flags.DEFINE_string('YtoX_model', 'g2.pb', 'YtoX model name, default: g2.pb')
 tf.flags.DEFINE_integer('image_size', None, 'image size, default: None')

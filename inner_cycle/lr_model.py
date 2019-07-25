@@ -1,8 +1,8 @@
 import tensorflow as tf
-import utils
-from reader import Reader
-from discriminator1 import Discriminator1
-from generator12 import Generator12
+import helpers.utils as utils
+from helpers.reader import Reader
+from inner_cycle.discriminator1 import Discriminator1
+from inner_cycle.generator12 import Generator12
 import random
 import numpy as np
 

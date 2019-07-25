@@ -6,10 +6,11 @@ import cv2
 
 FLAGS = tf.flags.FLAGS
 
-tf.flags.DEFINE_string('model', 'checkpoints/edsr/20190621-1429/edsr.pb', 'model path (.pb)')
-tf.flags.DEFINE_string('input_folder', '../data/DIV2K/Z_train/', 'input image path (.png)')
-tf.flags.DEFINE_string('output_folder', '../data/inference/', 'output images folder')
+tf.flags.DEFINE_string('model', '../checkpoints/edsr/20190723-1610/edsr.pb', 'model path (.pb)')
+tf.flags.DEFINE_string('input_folder', '../../data/DIV2K/Z_test/', 'input image path (.png)')
+tf.flags.DEFINE_string('output_folder', '../../data/inference/', 'output images folder')
 tf.flags.DEFINE_integer('scale', 4, 'scale, default: 4')
+
 
 def load_graph(frozen_graph_filename):
     # We load the protobuf file from the disk and parse it to retrieve the
@@ -40,9 +41,8 @@ def main(unused_argv):
     input_image = graph.get_tensor_by_name('prefix/input_image:0')  # uint8
     output_image = graph.get_tensor_by_name('prefix/output_image:0')  # string
 
-    # output_image = tf.clip_by_value(t=output_image, -1, 1)
+    # output_image = tf.clip_by_value(output_image, -1, 1)
 
-    output_image_und = output_image  # non-decoded output image
     output_image = tf.image.decode_png(output_image, channels=3)  # uint8
 
     try:
@@ -70,39 +70,6 @@ def main(unused_argv):
             out_name = output_folder + '/' + files[i][0:-4] + '.png'
             cv2.imwrite(out_name, to_write)
 
-            '''
-            image_name = files[i]
-            image_data = tf.gfile.FastGFile(FLAGS.input_folder + image_name, 'rb').read()
-            image_data = tf.image.decode_png(image_data)
-            rr = image_data.eval()
-            generated = output_image.eval(feed_dict={input_image: rr})
-            to_write = output_image_und.eval(feed_dict={input_image: rr})
-            
-            gt_image_name = gt_files[i]
-            gt_image_data = tf.gfile.FastGFile(FLAGS.input_gt_folder + gt_image_name, 'rb').read()
-            gt_image_data = tf.image.decode_png(gt_image_data)
-            gt = gt_image_data.eval()
-
-            psnr = tf.image.psnr(gt, generated, max_val=255)
-            psnr_0 = tf.image.psnr(gt, rr, max_val=255)
-            psnr_ev = psnr.eval()
-            psnr_0_ev = psnr_0.eval()
-            # plt.imshow(generated)
-
-
-            #psnr_ev = psnr(gt, generated)
-            #psnr_0_ev = psnr(gt, rr)
-            avg_psnr += psnr_ev
-
-            print('Elaborated file {0:2d}/{1:3d}.'.format(i + 1, len(files)),
-                  '  PSNR:{0:2.4f}'.format(psnr_ev),
-                  '  Improvement: {0:1.4f}'.format(psnr_ev/psnr_0_ev - 1))
-            
-
-            with open(output_folder + '/' + image_name[0:-4] + '.png', 'wb') as f:
-                f.write(to_write)
-            print(str(i)+' ok')
-            '''
         avg_psnr /= len(files)
         print('Average PSNR: ', avg_psnr)
 

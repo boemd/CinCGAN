@@ -1,6 +1,6 @@
 import tensorflow as tf
-import ops
-import utils
+import helpers.ops as ops
+import helpers.utils as utils
 
 
 class EDSR:

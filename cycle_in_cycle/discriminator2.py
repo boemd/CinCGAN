@@ -1,8 +1,8 @@
 import tensorflow as tf
-import ops
+import helpers.ops as ops
 
 
-class Discriminator1:
+class Discriminator2:
     def __init__(self, name, is_training):
         self.name = name
         self.is_training = is_training
@@ -18,11 +18,11 @@ class Discriminator1:
         """
         with tf.variable_scope(self.name):
             # convolution layers
-            C64 = ops.Ck(input, k=64, stride=1, reuse=self.reuse, norm=None,
+            C64 = ops.Ck(input, k=64, stride=2, reuse=self.reuse, norm=None,
                          is_training=self.is_training, name='C64')  # (?, w/2, h/2, 64)
-            C128 = ops.Ck(C64, k=128, stride=1, reuse=self.reuse, norm='batch',
+            C128 = ops.Ck(C64, k=128, stride=2, reuse=self.reuse, norm='batch',
                           is_training=self.is_training, name='C128')  # (?, w/4, h/4, 128)
-            C256 = ops.Ck(C128, k=256, stride=1, reuse=self.reuse, norm='batch',
+            C256 = ops.Ck(C128, k=256, stride=2, reuse=self.reuse, norm='batch',
                           is_training=self.is_training, name='C256')  # (?, w/8, h/8, 256)
             C512 = ops.Ck(C256, k=512, stride=1, reuse=self.reuse, norm='batch',
                           is_training=self.is_training, name='C512')  # (?, w/16, h/16, 512)

@@ -1,5 +1,5 @@
 import tensorflow as tf
-import utils
+import helpers.utils as utils
 import numpy as np
 import random
 

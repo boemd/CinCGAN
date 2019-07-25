@@ -1,11 +1,11 @@
 import tensorflow as tf
-import utils
-from reader import Reader
-from discriminator1 import Discriminator1
-from discriminator2 import Discriminator2
-from generator12 import Generator12
-from generator3 import Generator3
-from edsr_t import EDSR
+import helpers.utils as utils
+from helpers.reader import Reader
+from inner_cycle.discriminator1 import Discriminator1
+from cycle_in_cycle.discriminator2 import Discriminator2
+from inner_cycle.generator12 import Generator12
+from cycle_in_cycle.generator3 import Generator3
+from super_resolution.edsr import EDSR
 import random
 import numpy as np
 
@@ -59,6 +59,9 @@ class CinCGAN:
         self.fake_y = tf.placeholder(tf.float32, shape=[batch_size, None, None, 3])
         self.fake_z = tf.placeholder(tf.float32, shape=[batch_size, None, None, 3])
 
+        self.prev_x = tf.placeholder(tf.float32, shape=[batch_size, None, None, 3])
+        self.prev_y = tf.placeholder(tf.float32, shape=[batch_size, None, None, 3])
+
         self.psnr_validation_y = tf.placeholder(tf.float32, shape=())
         self.psnr_validation_z = tf.placeholder(tf.float32, shape=())
 
@@ -78,25 +81,30 @@ class CinCGAN:
         fake_y = self.G1(x)
         fake_z = self.EDSR(fake_y)
 
+        # Inelegant, inefficient, ugly af.
+        # If anyone will ever read this code, please find a solution to modify it please
+        f_z = self.EDSR(self.G1(self.prev_x))
+
         gan_loss_lr = self.generator_adversarial_loss(self.D1, fake_y)
         cyc_loss_lr = self.cycle_consistency_loss(self.G2, fake_y, x) * self.b1
         idt_loss_lr = self.identity_loss(self.G1, y) * self.b2
         ttv_loss_lr = self.total_variation_loss(fake_y) * self.b3
         dis_loss_lr = self.discriminator_adversarial_loss(self.D1, y, self.fake_y)
 
-        gan_loss_hr = self.generator_adversarial_loss(self.D2, fake_z)
-        cyc_loss_hr = self.cycle_consistency_loss(self.G3, fake_z, x) * self.l1
+        gan_loss_hr = self.generator_adversarial_loss(self.D2, f_z)
+        cyc_loss_hr = self.cycle_consistency_loss(self.G3, f_z, self.prev_x) * self.l1
         idt_loss_hr = self.new_identity_loss(self.EDSR, z) * self.l2
-        ttv_loss_hr = self.total_variation_loss(fake_z) * self.l3
+        ttv_loss_hr = self.total_variation_loss(f_z) * self.l3
         dis_loss_hr = self.discriminator_adversarial_loss(self.D2, z, self.fake_z)
 
-        G1_loss = (gan_loss_hr + cyc_loss_hr + idt_loss_hr + ttv_loss_hr)
-        G2_loss = cyc_loss_lr * 0
-        D1_loss = dis_loss_lr * 0
+        G1_loss_in = gan_loss_lr + cyc_loss_lr + idt_loss_lr + ttv_loss_lr
+        G2_loss_in = cyc_loss_lr
+        D1_loss_in = dis_loss_lr
 
-        EDSR_loss = (gan_loss_hr + cyc_loss_hr + idt_loss_hr + ttv_loss_hr)
-        G3_loss = cyc_loss_hr
-        D2_loss = dis_loss_hr
+        G1_loss_out = (gan_loss_hr + cyc_loss_hr + idt_loss_hr + ttv_loss_hr)
+        EDSR_loss_out = (gan_loss_hr + cyc_loss_hr + idt_loss_hr + ttv_loss_hr)
+        G3_loss_out = cyc_loss_hr
+        D2_loss_out = dis_loss_hr
 
         v1 = utils.batch_convert2float(self.val_x)
         v2 = self.G1(v1)
@@ -105,6 +113,7 @@ class CinCGAN:
         val_z = utils.batch_convert2int(v3)
 
         # summary
+        '''
         tf.summary.histogram('D1/true', self.D1(y))
         tf.summary.histogram('D1/fake', self.D1(fake_y))
         tf.summary.histogram('D2/true', self.D2(z))
@@ -115,7 +124,7 @@ class CinCGAN:
         tf.summary.scalar('lr_loss/identity', idt_loss_lr)
         tf.summary.scalar('lr_loss/total_variation', ttv_loss_lr)
         tf.summary.scalar('lr_loss/total_loss', G1_loss)
-        tf.summary.scalar('lr_loss/discriminator_loss', D1_loss)
+        # tf.summary.scalar('lr_loss/discriminator_loss', D1_loss)
 
         tf.summary.scalar('hr_loss/gan', gan_loss_hr)
         tf.summary.scalar('hr_loss/cycle_consistency', cyc_loss_hr)
@@ -130,8 +139,9 @@ class CinCGAN:
 
         tf.summary.scalar('psnr/validation_y', self.psnr_validation_y)
         tf.summary.scalar('psnr/validation_z', self.psnr_validation_z)
+        '''
 
-        return G1_loss, G2_loss, D1_loss, EDSR_loss, G3_loss, D2_loss, val_y, val_z, fake_y, fake_z
+        return G1_loss_in, G2_loss_in, D1_loss_in, G1_loss_out, EDSR_loss_out, G3_loss_out, D2_loss_out, val_y, val_z, fake_y, fake_z, x
 
     def generator_adversarial_loss(self, D, fake_sample):
         return tf.reduce_mean(tf.squared_difference(D(fake_sample), REAL_LABEL))
@@ -187,7 +197,41 @@ class CinCGAN:
         loss = tf.reduce_mean(tf.squared_difference(EDSR(z_sub), z))
         return loss
 
-    def optimize(self, G1_loss, G2_loss, D1_loss, EDSR_loss, G3_loss, D2_loss):
+    def optimize_outer_cycle(self, G1_loss_out, EDSR_loss, G3_loss, D2_loss):
+        def make_optimizer(loss, variables, name='Adam'):
+            global_step = tf.Variable(0, trainable=False)
+            starter_learning_rate = self.learning_rate
+            start_decay_step = 40000
+            decay_steps = 40000
+            decay_rate = 0.5
+            beta1 = self.beta1
+            beta2 = self.beta2
+            epsilon = self.epsilon
+            learning_rate = (
+                tf.where(
+                    condition=tf.greater_equal(global_step, start_decay_step),
+                    x=tf.train.exponential_decay(learning_rate=starter_learning_rate, global_step=global_step,
+                                                 decay_steps=decay_steps, decay_rate=decay_rate, staircase=True),
+                    y=starter_learning_rate
+                )
+            )
+            tf.summary.scalar('learning_rate/{}'.format(name), learning_rate)
+
+            learning_step = (
+                tf.train.AdamOptimizer(learning_rate, beta1=beta1, beta2=beta2, epsilon=epsilon, name=name)
+                        .minimize(loss, global_step=global_step, var_list=variables)
+            )
+            return learning_step
+
+        G1_optimizer = make_optimizer(G1_loss_out, self.G1.variables, name='AdamG1_out')
+        EDSR_optimizer = make_optimizer(EDSR_loss, self.EDSR.variables, name='AdamEDSR_out')
+        D2_optimizer = make_optimizer(D2_loss, self.D2.variables, name='AdamD2_out')
+        G3_optimizer = make_optimizer(G3_loss, self.G3.variables, name='AdamG3_out')
+
+        with tf.control_dependencies([G1_optimizer, EDSR_optimizer, G3_optimizer, D2_optimizer]):
+            return tf.no_op(name='optimizers_out')
+
+    def optimize_inner_cycle(self, G1_loss_in, G2_loss_in, D1_loss_in):
         def make_optimizer(loss, variables, name='Adam'):
             global_step = tf.Variable(0, trainable=False)
             starter_learning_rate = self.learning_rate
@@ -213,13 +257,9 @@ class CinCGAN:
             )
             return learning_step
 
-        G1_optimizer = make_optimizer(G1_loss, self.G1.variables, name='AdamG1')
-        G2_optimizer = make_optimizer(G2_loss, self.G2.variables, name='AdamG2')
-        D1_optimizer = make_optimizer(D1_loss, self.D1.variables, name='AdamD1')
-        EDSR_optimizer = make_optimizer(EDSR_loss, self.EDSR.variables, name='AdamEDSR')
-        G3_optimizer = make_optimizer(G3_loss, self.G3.variables, name='AdamG3')
-        D2_optimizer = make_optimizer(D2_loss, self.D2.variables, name='AdamD2')
+        G1_optimizer = make_optimizer(G1_loss_in, self.G1.variables, name='AdamG1_in')
+        G2_optimizer = make_optimizer(G2_loss_in, self.G2.variables, name='AdamG2_in')
+        D1_optimizer = make_optimizer(D1_loss_in, self.D1.variables, name='AdamD1_in')
 
-        with tf.control_dependencies(
-                [G1_optimizer, G2_optimizer, D1_optimizer, EDSR_optimizer, G3_optimizer, D2_optimizer]):
-            return tf.no_op(name='optimizers')
+        with tf.control_dependencies([G1_optimizer, G2_optimizer, D1_optimizer]):
+            return tf.no_op(name='optimizers_out')
