@@ -45,18 +45,21 @@ class EDSR:
             x = ops.c3s1_k(input=x, k=3, is_training=self.is_training,
                            reuse=self.reuse, name='edsr_conv_03', activation='')
 
-            #out = tf.clip_by_value(x + mean, 0.0, 255.0)
-            out = tf.clip_by_value(x, -1.0, 1.0)
+            # out = tf.clip_by_value(x, -1.0, 1.0)
 
             self.reuse = True
             self.variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=self.name)
 
-            return out
+            return x
 
     def sample(self, input_img):
-        image = self.__call__(tf.to_float(input_img))
-        image = tf.image.convert_image_dtype((image+1)/2, dtype=tf.uint8)  #########
-        image = tf.image.encode_png(tf.squeeze(image, [0]))
+        # image = self.__call__(tf.to_float(input_img))
+        # image = tf.image.convert_image_dtype((image+1)/2, dtype=tf.uint8)  #########
+        # image = tf.image.encode_png(tf.squeeze(image, [0]))
+        batch = tf.clip_by_value(self.__call__(input_img), -1, 1)
+        # batch = self.__call__(input_img)
+        image = tf.squeeze(utils.batch_convert2int(batch), [0])
+        image = tf.image.encode_png(image)
         return image
 
 

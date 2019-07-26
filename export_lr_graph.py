@@ -1,7 +1,7 @@
 import tensorflow as tf
 import os
 from tensorflow.python.tools.freeze_graph import freeze_graph
-from inner_cycle.lr_model import CleanGAN
+from models.lr_model import CleanGAN
 import helpers.utils as utils
 
 FLAGS = tf.flags.FLAGS

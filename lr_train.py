@@ -1,7 +1,7 @@
 import tensorflow as tf
-from inner_cycle.lr_model import CleanGAN
-from datetime import datetime
 import os
+from models.lr_model import CleanGAN
+from datetime import datetime
 import helpers.utils as utils
 import logging
 from os import listdir, makedirs, error

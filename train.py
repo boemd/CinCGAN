@@ -1,5 +1,5 @@
 import tensorflow as tf
-from cycle_in_cycle.model import CinCGAN
+from models.model import CinCGAN
 from datetime import datetime
 import os
 import helpers.utils as utils

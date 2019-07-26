@@ -6,9 +6,9 @@ import cv2
 
 FLAGS = tf.flags.FLAGS
 
-tf.flags.DEFINE_string('model', '../checkpoints/edsr/20190723-1610/edsr.pb', 'model path (.pb)')
-tf.flags.DEFINE_string('input_folder', '../../data/DIV2K/Z_test/', 'input image path (.png)')
-tf.flags.DEFINE_string('output_folder', '../../data/inference/', 'output images folder')
+tf.flags.DEFINE_string('model', 'checkpoints/edsr/blade/edsr.pb', 'model path (.pb)')
+tf.flags.DEFINE_string('input_folder', '../data/DIV2K/Z_test/', 'input image path (.png)')
+tf.flags.DEFINE_string('output_folder', '../data/inference/', 'output images folder')
 tf.flags.DEFINE_integer('scale', 4, 'scale, default: 4')
 
 
@@ -57,7 +57,7 @@ def main(unused_argv):
             img = cv2.imread(FLAGS.input_folder + files[i])
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             gt = img
-            img = cv2.resize(img, dsize=None, fx=1 / FLAGS.scale, fy=1 / FLAGS.scale, interpolation=cv2.INTER_CUBIC)
+            img = cv2.resize(img, dsize=None, fx=1 / FLAGS.scale, fy=1 / FLAGS.scale, interpolation=cv2.INTER_LINEAR)
             im1 = np.zeros([1, img.shape[0], img.shape[1], img.shape[2]])
             im1[0] = img
             im1 = im1.astype('uint8')

@@ -1,15 +1,14 @@
 import tensorflow as tf
 import os
 from tensorflow.python.tools.freeze_graph import freeze_graph
-from super_resolution.edsr import EDSR
-from super_resolution.edsr_model import E_mod
+from nets.edsr import EDSR
+from models.edsr_model import E_mod
 import helpers.utils as utils
 
 FLAGS = tf.flags.FLAGS
 
-tf.flags.DEFINE_string('checkpoint_dir', '../checkpoints/edsr/20190723-1610', 'checkpoints directory path')
+tf.flags.DEFINE_string('checkpoint_dir', 'checkpoints/edsr/blade', 'checkpoints directory path')
 tf.flags.DEFINE_string('model', 'edsr.pb', 'Model name, default: edsr.pb')
-tf.flags.DEFINE_integer('image_size', None, 'image size, default: None')
 
 
 def export_graph(model_name):
@@ -19,8 +18,8 @@ def export_graph(model_name):
         #edsr = EDSR(name='super_res', is_training=True)
         e_mod = E_mod()
         e_mod.model()
-        input_image = tf.placeholder(tf.uint8, shape=[FLAGS.image_size, FLAGS.image_size, 3], name='input_image')
-        input_image = tf.to_float(input_image)
+        input_image = tf.placeholder(tf.uint8, shape=[None, None, 3], name='input_image')
+        input_image = utils.convert2float(input_image)
         output_image = e_mod.edsr.sample(input_img=tf.expand_dims(input_image, 0))
         output_image = tf.identity(output_image, name='output_image')
         restore_saver = tf.train.Saver()

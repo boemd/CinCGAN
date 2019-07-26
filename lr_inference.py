@@ -1,4 +1,3 @@
-
 import tensorflow as tf
 from datetime import datetime
 import math
