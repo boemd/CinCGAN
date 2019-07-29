@@ -35,7 +35,8 @@ class E_mod:
         # x = tf.to_float(utils.batch_convert2int(x))   # 0 255 ma float
         # y = tf.to_float(utils.batch_convert2int(y))  # tf.to_float(
 
-        val_y = self.edsr(tf.to_float(self.val_x))
+        # val_y = self.edsr(tf.to_float(self.val_x))
+        val_y = utils.batch_convert2int(self.edsr(utils.batch_convert2float(self.val_x)))
 
         fake_y = self.edsr(x)
 
@@ -43,7 +44,7 @@ class E_mod:
 
         # summary
         mse = tf.reduce_mean(tf.squared_difference(fake_y, y))
-        PSNR = tf.constant(255 ** 2, dtype=tf.float32) / mse
+        PSNR = tf.constant(1 ** 2, dtype=tf.float32) / mse
         PSNR = tf.constant(10, dtype=tf.float32) * ops.log10(PSNR)
 
         # Scalar to keep track for loss

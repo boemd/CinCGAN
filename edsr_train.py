@@ -23,7 +23,7 @@ tf.flags.DEFINE_float('beta2', 0.999, 'momentum term of Adam, default: 0.999')
 tf.flags.DEFINE_float('epsilon', 1e-8, 'constant for numerical stability of Adam, default: 1e-8')
 tf.flags.DEFINE_string('Z', '../data/tfrecords/train_z.tfrecords',
                        'Z tfrecords file for training, default: data/tfrecords/train_z.tfrecords')
-tf.flags.DEFINE_string('load_model', None,
+tf.flags.DEFINE_string('load_model', 'checkpoints/edsr/blade_noclip-0',
                        'folder of saved model that you wish to continue training (e.g. checkpoints/edsr/20190625-1405), default: None')
 tf.flags.DEFINE_integer('max_iter', 1000000, 'maximum number of iterations during training, default: 400000')
 tf.flags.DEFINE_string('validation_set', '../data/DIV2K/Z_test/', 'validation set')
@@ -33,11 +33,11 @@ tf.flags.DEFINE_boolean('validate', True, 'validation flag, default: True')
 def train():
     if FLAGS.load_model is not None:
         # load the specified model
-        checkpoints_dir = "../checkpoints/edsr/" + FLAGS.load_model.lstrip("../checkpoints/edsr")
+        checkpoints_dir = "checkpoints/edsr/" + FLAGS.load_model.lstrip("checkpoints/edsr")
     else:
         # create checkpoint directory
         current_time = datetime.now().strftime("%Y%m%d-%H%M")
-        checkpoints_dir = "../checkpoints/edsr/{}".format(current_time)
+        checkpoints_dir = "checkpoints/edsr/{}".format(current_time)
         try:
             os.makedirs(checkpoints_dir)
         except os.error:
@@ -134,7 +134,7 @@ def validate(ed, val_y, sess):
 
 
 def psnr(image_a, image_b):
-    e = image_a.astype("double") - image_b.astype("double")
+    e = image_a.astype("double")/255 - image_b.astype("double")/255
     n = image_a.shape[0] * image_a.shape[1] * image_a.shape[2]
     return round(10 * math.log10(n / np.sum(np.power(e, 2))), 4)
 
