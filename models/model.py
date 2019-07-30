@@ -63,6 +63,8 @@ class CinCGAN:
 
         self.psnr_validation_y = tf.placeholder(tf.float32, shape=())
         self.psnr_validation_z = tf.placeholder(tf.float32, shape=())
+        self.ssim_validation_y = tf.placeholder(tf.float32, shape=())
+        self.ssim_validation_z = tf.placeholder(tf.float32, shape=())
 
         self.val_x = tf.placeholder(tf.uint8, shape=[1, None, None, 3])
 
@@ -135,10 +137,13 @@ class CinCGAN:
         tf.summary.image('LR/x', utils.batch_convert2int(tf.expand_dims(x[0], 0)))
         tf.summary.image('LR/fake_y', utils.batch_convert2int(tf.expand_dims(fake_y[0], 0)))
         tf.summary.image('HR/fake_z', utils.batch_convert2int(tf.expand_dims(fake_z[0], 0)))
-
-        tf.summary.scalar('psnr/validation_y', self.psnr_validation_y)
-        tf.summary.scalar('psnr/validation_z', self.psnr_validation_z)
         '''
+
+        tf.summary.scalar('validation/psnr_y', self.psnr_validation_y)
+        tf.summary.scalar('validation/psnr_z', self.psnr_validation_z)
+        tf.summary.scalar('validation/ssim_y', self.ssim_validation_y)
+        tf.summary.scalar('validation/ssim_z', self.ssim_validation_z)
+
 
         return G1_loss_in, G2_loss_in, D1_loss_in, G1_loss_out, EDSR_loss_out, G3_loss_out, D2_loss_out, val_y, val_z, fake_y, fake_z, x
 

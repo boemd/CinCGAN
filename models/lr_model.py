@@ -42,6 +42,7 @@ class CleanGAN:
         self.D1 = Discriminator1('D1', self.is_training)
         self.fake_y = tf.placeholder(tf.float32, shape=[batch_size, None, None, 3])
         self.psnr_validation = tf.placeholder(tf.float32, shape=())
+        self.ssim_validation = tf.placeholder(tf.float32, shape=())
 
         self.val_x = tf.placeholder(tf.uint8, shape=[1, None, None, 3])
 
@@ -83,7 +84,8 @@ class CleanGAN:
         tf.summary.scalar('lr_loss/total_variation', ttv_loss)
         tf.summary.scalar('lr_loss/total_loss', G1_loss)
         tf.summary.scalar('lr_loss/discriminator_loss', D1_loss)
-        tf.summary.scalar('lr_psnr/validation', self.psnr_validation)
+        tf.summary.scalar('val_metrics/psnr', self.psnr_validation)
+        tf.summary.scalar('val_metrics/ssim', self.ssim_validation)
 
         # tf.summary.image('A/y', utils.batch_convert2int(tf.expand_dims(ima[0], 0)))
         # tf.summary.image('A/gy', utils.batch_convert2int(tf.expand_dims(imb[0], 0)))

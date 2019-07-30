@@ -25,6 +25,7 @@ class E_mod:
                          num_blocks=32, feature_size=256, rb_scaling=0.1)
 
         self.psnr_validation = tf.placeholder(tf.float32, shape=())
+        self.ssim_validation = tf.placeholder(tf.float32, shape=())
 
         self.val_x = tf.placeholder(tf.uint8, shape=[1, None, None, 3])
 
@@ -51,7 +52,8 @@ class E_mod:
         tf.summary.scalar("metrics/loss", loss)
         tf.summary.scalar("metrics/MSE", mse)
         tf.summary.scalar("metrics/PSNR", PSNR)
-        tf.summary.scalar('psnr/validation', self.psnr_validation)
+        tf.summary.scalar('validation_metrics/psnr', self.psnr_validation)
+        tf.summary.scalar('validation_metrics/ssim', self.ssim_validation)
 
         tf.summary.image('EDSR/input', utils.batch_convert2int(tf.expand_dims(x[0], 0)))
         tf.summary.image('EDSR/output', utils.batch_convert2int(tf.expand_dims(fake_y[0], 0)))
