@@ -245,8 +245,8 @@ class CinCGAN:
         def make_optimizer(loss, variables, name='Adam'):
             global_step = tf.Variable(0, trainable=False)
             starter_learning_rate = 0.0002*(0.5**10)
-            start_decay_step = 20000
-            decay_steps = 20000
+            start_decay_step = 40000
+            decay_steps = 40000
             decay_rate = 0.5
             beta1 = self.beta1
             beta2 = self.beta2
