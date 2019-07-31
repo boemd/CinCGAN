@@ -144,7 +144,7 @@ class Reader():
             images, gt_images, aaa, bbb = tf.train.shuffle_batch(
                 [image, gt_image, aa, bb], batch_size=self.batch_size, num_threads=self.num_threads,
                 capacity=self.batch_size,  # self.min_queue_examples + 3 * self.batch_size,
-                min_after_dequeue=0,  # self.min_queue_examples,
+                min_after_dequeue= 0 #self.min_queue_examples,
             )
 
             # tf.summary.image('_input', images)

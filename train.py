@@ -26,7 +26,7 @@ tf.flags.DEFINE_float('l3', 2, 'weight for the hr total variation loss, default:
 
 # learning parameters
 tf.flags.DEFINE_integer('batch_size', 16, 'batch size, default: 16')
-tf.flags.DEFINE_float('learning_rate', 0.0002, 'initial learning rate for Adam, default: 0.0002')
+tf.flags.DEFINE_float('learning_rate', 0.0001, 'initial learning rate for Adam, default: 0.0002')
 tf.flags.DEFINE_float('beta1', 0.5, 'momentum term of Adam, default: 0.5')
 tf.flags.DEFINE_float('beta2', 0.999, 'momentum term of Adam, default: 0.999')
 tf.flags.DEFINE_float('epsilon', 1e-8, 'constant for numerical stability of Adam, default: 1e-8')

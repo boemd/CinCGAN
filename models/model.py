@@ -244,7 +244,7 @@ class CinCGAN:
     def optimize_inner_cycle(self, G1_loss_in, G2_loss_in, D1_loss_in):
         def make_optimizer(loss, variables, name='Adam'):
             global_step = tf.Variable(0, trainable=False)
-            starter_learning_rate = self.learning_rate
+            starter_learning_rate = self.learning_rate*(0.5**10)
             start_decay_step = 20000
             decay_steps = 20000
             decay_rate = 0.5
