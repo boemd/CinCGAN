@@ -125,7 +125,7 @@ class CinCGAN:
         tf.summary.scalar('lr_loss/identity', idt_loss_lr)
         tf.summary.scalar('lr_loss/total_variation', ttv_loss_lr)
         tf.summary.scalar('lr_loss/total_loss', G1_loss_in)
-        # tf.summary.scalar('lr_loss/discriminator_loss', D1_loss)
+        tf.summary.scalar('lr_loss/discriminator_loss', D1_loss_in)
 
         tf.summary.scalar('hr_loss/gan', gan_loss_hr)
         tf.summary.scalar('hr_loss/cycle_consistency', cyc_loss_hr)
