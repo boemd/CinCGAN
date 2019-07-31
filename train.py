@@ -49,8 +49,8 @@ tf.flags.DEFINE_string('validation_ground_truth_z', '../data/DIV2K/Z_test/', 'va
 
 # pre-trained models
 tf.flags.DEFINE_string('load_CinCGAN_model', None, 'folder of the saved complete model')
-tf.flags.DEFINE_string('load_CleanGAN_model', 'checkpoints/lr/20190719-1500/model.ckpt-390000', 'folder of the saved CinCGAN model')
-tf.flags.DEFINE_string('load_EDSR_model', 'checkpoints/edsr/blade_vecchio-810k/model.ckpt-810000', 'folder of the saved EDSR model')
+tf.flags.DEFINE_string('load_CleanGAN_model', 'checkpoints/lr/20190729-1510/model.ckpt-240000', 'folder of the saved CinCGAN model')
+tf.flags.DEFINE_string('load_EDSR_model', 'checkpoints/edsr/20190727-1728/model.ckpt-490000', 'folder of the saved EDSR model')
 '''
 tf.flags.DEFINE_string('load_CinCGAN_model', 'checkpoints/joint/20190719-1500/model.ckpt-100', 'folder of the saved complete model')
 tf.flags.DEFINE_string('load_CleanGAN_model', 'checkpoints/lr/20190719-1500/model.ckpt-390000', 'folder of the saved CinCGAN model')
