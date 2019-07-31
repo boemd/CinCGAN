@@ -35,19 +35,20 @@ class Generator12:
                                    reuse=self.reuse, name='b_c3s1_64_d')
             c7s1_3 = ops.c7s1_k(c3s1_64_d, k=3, is_training=self.is_training,
                                 reuse=self.reuse, name='b_c7s1_3_b', activation=None)
-            out = tf.clip_by_value(c7s1_3, -1, 1)
+            # out = tf.clip_by_value(c7s1_3, -1, 1)
             # out2 = input + out poi clip
             # set reuse=True for next call
             self.reuse = True
             self.variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=self.name)
 
-            return out  # c7s1_3
+            return c7s1_3
 
     def sample(self, input_img):
-        image = utils.batch_convert2int(self.__call__(input_img))
+        image = tf.clip_by_value(self.__call__(input_img), -1, 1)
+        image = utils.batch_convert2int(image)
         image = tf.image.encode_png(tf.squeeze(image, [0]))
         return image
 
     def sample_f(self, input_img):
-        return tf.squeeze(self.__call__(input_img), [0])
+        return tf.squeeze(tf.clip_by_value(self.__call__(input_img), -1, 1), [0])
 

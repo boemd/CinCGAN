@@ -8,7 +8,7 @@ from os.path import isfile, join
 import cv2
 import numpy as np
 import math
-
+from helpers.utils import psnr, ssim
 '''
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID";
 os.environ["CUDA_VISIBLE_DEVICES"]="2";
@@ -23,7 +23,7 @@ tf.flags.DEFINE_float('beta2', 0.999, 'momentum term of Adam, default: 0.999')
 tf.flags.DEFINE_float('epsilon', 1e-8, 'constant for numerical stability of Adam, default: 1e-8')
 tf.flags.DEFINE_string('Z', '../data/tfrecords/train_z.tfrecords',
                        'Z tfrecords file for training, default: data/tfrecords/train_z.tfrecords')
-tf.flags.DEFINE_string('load_model', 'checkpoints/edsr/blade_noclip-0',
+tf.flags.DEFINE_string('load_model', None,
                        'folder of saved model that you wish to continue training (e.g. checkpoints/edsr/20190625-1405), default: None')
 tf.flags.DEFINE_integer('max_iter', 1000000, 'maximum number of iterations during training, default: 400000')
 tf.flags.DEFINE_string('validation_set', '../data/DIV2K/Z_test/', 'validation set')
@@ -136,67 +136,6 @@ def validate(ed, val_y, sess):
     ss /= rounds
     logging.info('Validation completed. PSNR: {:f}, SSIM: {:f}'.format(ps, ss))
     return ps, ss
-
-
-def psnr(image_a, image_b):
-    e = image_a.astype("double")/255 - image_b.astype("double")/255
-    n = image_a.shape[0] * image_a.shape[1] * image_a.shape[2]
-    return round(10 * math.log10(n / np.sum(np.power(e, 2))), 4)
-
-
-def ssim(im1, im2):
-    h, w, d = im1.shape
-    ssim = 0
-    for i in range(d):
-        a = im1[:, :, i]
-        b = im2[:, :, i]
-        K = [0.01, 0.03]
-        L = 255
-
-        C1 = (K[0]*L)**2
-        C2 = (K[1]*L)**2
-        a = a.astype(float)
-        b = b.astype(float)
-        mu1 = cv2.GaussianBlur(a, (11, 11), 1.5, cv2.BORDER_ISOLATED)
-        mu1 = mu1[5:, 5:]
-        mu1 = mu1[:-5, :-5]
-        mu2 = cv2.GaussianBlur(b.astype(float), (11, 11), 1.5, cv2.BORDER_ISOLATED)
-        mu2 = mu2[5:, 5:]
-        mu2 = mu2[:-5, :-5]
-
-        mu1_sq = mu1 ** 2
-        mu2_sq = mu2 ** 2
-        mu1_mu2 = np.multiply(mu1, mu2)
-
-        sigma1_sq = cv2.GaussianBlur(a**2, (11, 11), 1.5)
-        sigma1_sq = sigma1_sq[5:, 5:]
-        sigma1_sq = sigma1_sq[:-5, :-5] - mu1_sq
-
-        sigma2_sq = cv2.GaussianBlur(b**2, (11, 11), 1.5)
-        sigma2_sq = sigma2_sq[5:, 5:]
-        sigma2_sq = sigma2_sq[:-5, :-5] - mu2_sq
-
-        sigma12 = cv2.GaussianBlur(np.multiply(a, b), (11, 11), 1.5)
-        sigma12 = sigma12[5:, 5:]
-        sigma12 = sigma12[:-5, :-5] - mu1_mu2
-
-        if C1 > 0 and C2 > 0:
-            ssim_map = np.divide(np.multiply((2 * mu1_mu2 + C1), (2 * sigma12 + C2)), np.multiply((mu1_sq + mu2_sq + C1), (sigma1_sq + sigma2_sq + C2)))
-        else:
-            # this is useless
-            numerator1 = 2 * mu1_mu2 + C1
-            numerator2 = 2 * sigma12 + C2
-            denominator1 = mu1_sq + mu2_sq + C1
-            denominator2 = sigma1_sq + sigma2_sq + C2
-            ssim_map = np.ones((h, w))
-            index = np.nonzero(np.clip(np.dot(denominator1, denominator2), a_min=0))
-            ssim_map[index] = np.dot(numerator1[index], numerator2[index]) / \
-                              np.dot(denominator1[index], denominator2[index])
-            index = np.nonzero(denominator1) and np.argwhere(denominator2 == 0)
-            ssim_map[index] = numerator1[index] / denominator1[index]
-        ssim += np.mean(ssim_map)
-    ssim /= d
-    return np.round(ssim, 4)
 
 
 def print_total_parameters():

@@ -6,10 +6,10 @@ import cv2
 
 FLAGS = tf.flags.FLAGS
 
-tf.flags.DEFINE_string('model', '../checkpoints/lr/20190723-1528/g1.pb', 'model path (.pb)')
-tf.flags.DEFINE_string('input_folder', '../../data/DIV2K/X_validation/', 'input image path (.png)')
-tf.flags.DEFINE_string('input_gt_folder', '../../data/DIV2K/X_validation_gt/', 'input image path (.png)')
-tf.flags.DEFINE_string('output_folder', '../../data/inference/', 'output images folder')
+tf.flags.DEFINE_string('model', 'checkpoints/lr/20190731-0948/g1.pb', 'model path (.pb)')
+tf.flags.DEFINE_string('input_folder', '../data/DIV2K/X_validation/', 'input image path (.png)')
+tf.flags.DEFINE_string('input_gt_folder', '../data/DIV2K/X_validation_gt/', 'input image path (.png)')
+tf.flags.DEFINE_string('output_folder', '../data/inference/', 'output images folder')
 
 def load_graph(frozen_graph_filename):
     # We load the protobuf file from the disk and parse it to retrieve the
@@ -54,6 +54,7 @@ def main(unused_argv):
 
     with tf.Session(graph=graph) as sess:
         ps = 0
+        ss = 0
         for i in range(len(files)):
             img = cv2.imread(FLAGS.input_folder + files[i])
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -63,7 +64,9 @@ def main(unused_argv):
             gt = cv2.cvtColor(gt, cv2.COLOR_BGR2RGB)
             ps_i = psnr(generated, gt)
             ps_0 = psnr(img, gt)
+            ss_i = ssim(img, gt)
             ps += ps_i
+            ss += ss_i
             '''
             image_name = files[i]
             image_data = tf.gfile.FastGFile(FLAGS.input_folder + image_name, 'rb').read()
@@ -96,17 +99,75 @@ def main(unused_argv):
             cv2.imwrite(name, to_save)
             print('Elaborated file {0:3d}/{1:3d}.'.format(i + 1, len(files)),
                   '  PSNR:{0:2.4f}'.format(ps_i),
-                  '  Improvement: {0:1.4f}'.format(ps_i/ps_0 - 1))
+                  '  SSIM:{0:2.4f}'.format(ss_i),
+                  '  PSNR Improvement: {0:1.4f}'.format(ps_i/ps_0 - 1))
 
-        ps = ps / len(files)
+        ps /= len(files)
+        ss /= len(files)
 
         print('Average PSNR: ', ps)
+        print('Average SSIM: ', ss)
 
 
 def psnr(imageA, imageB):
     E = imageA.astype("double")/255 - imageB.astype("double")/255
     N = imageA.shape[0] * imageA.shape[1] * imageA.shape[2]
     return 10 * math.log10(N / np.sum(np.power(E, 2)))
+
+
+def ssim(im1, im2):
+    h, w, d = im1.shape
+    ssim = 0
+    for i in range(d):
+        a = im1[:, :, i]
+        b = im2[:, :, i]
+        K = [0.01, 0.03]
+        L = 255
+
+        C1 = (K[0]*L)**2
+        C2 = (K[1]*L)**2
+        a = a.astype(float)
+        b = b.astype(float)
+        mu1 = cv2.GaussianBlur(a, (11, 11), 1.5, cv2.BORDER_ISOLATED)
+        mu1 = mu1[5:, 5:]
+        mu1 = mu1[:-5, :-5]
+        mu2 = cv2.GaussianBlur(b.astype(float), (11, 11), 1.5, cv2.BORDER_ISOLATED)
+        mu2 = mu2[5:, 5:]
+        mu2 = mu2[:-5, :-5]
+
+        mu1_sq = mu1 ** 2
+        mu2_sq = mu2 ** 2
+        mu1_mu2 = np.multiply(mu1, mu2)
+
+        sigma1_sq = cv2.GaussianBlur(a**2, (11, 11), 1.5)
+        sigma1_sq = sigma1_sq[5:, 5:]
+        sigma1_sq = sigma1_sq[:-5, :-5] - mu1_sq
+
+        sigma2_sq = cv2.GaussianBlur(b**2, (11, 11), 1.5)
+        sigma2_sq = sigma2_sq[5:, 5:]
+        sigma2_sq = sigma2_sq[:-5, :-5] - mu2_sq
+
+        sigma12 = cv2.GaussianBlur(np.multiply(a, b), (11, 11), 1.5)
+        sigma12 = sigma12[5:, 5:]
+        sigma12 = sigma12[:-5, :-5] - mu1_mu2
+
+        if C1 > 0 and C2 > 0:
+            ssim_map = np.divide(np.multiply((2 * mu1_mu2 + C1), (2 * sigma12 + C2)), np.multiply((mu1_sq + mu2_sq + C1), (sigma1_sq + sigma2_sq + C2)))
+        else:
+            # this is useless
+            numerator1 = 2 * mu1_mu2 + C1
+            numerator2 = 2 * sigma12 + C2
+            denominator1 = mu1_sq + mu2_sq + C1
+            denominator2 = sigma1_sq + sigma2_sq + C2
+            ssim_map = np.ones((h, w))
+            index = np.nonzero(np.clip(np.dot(denominator1, denominator2), a_min=0))
+            ssim_map[index] = np.dot(numerator1[index], numerator2[index]) / \
+                              np.dot(denominator1[index], denominator2[index])
+            index = np.nonzero(denominator1) and np.argwhere(denominator2 == 0)
+            ssim_map[index] = numerator1[index] / denominator1[index]
+        ssim += np.mean(ssim_map)
+    ssim /= d
+    return np.round(ssim, 4)
 
 
 if __name__ == '__main__':

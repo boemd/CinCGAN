@@ -79,8 +79,8 @@ class CinCGAN:
         y, _, _, _ = Y_reader.feed(seed)
         z, _, _, _ = Z_reader.feed(seed)
 
-        fake_y = self.G1(x)
-        fake_z = self.EDSR(fake_y)
+        fake_y = self.G1(tf.clip_by_value(x, -1, 1))
+        fake_z = self.EDSR(tf.clip_by_value(fake_y, -1, 1))
 
         # Inelegant, inefficient, ugly af.
         # If anyone will ever read this code, please find a solution to modify it please
@@ -102,19 +102,19 @@ class CinCGAN:
         G2_loss_in = cyc_loss_lr
         D1_loss_in = dis_loss_lr
 
-        G1_loss_out = (gan_loss_hr + cyc_loss_hr + idt_loss_hr + ttv_loss_hr)
+        G1_loss_out = (gan_loss_hr + cyc_loss_hr + ttv_loss_hr)
         EDSR_loss_out = (gan_loss_hr + cyc_loss_hr + idt_loss_hr + ttv_loss_hr)
         G3_loss_out = cyc_loss_hr
         D2_loss_out = dis_loss_hr
 
         v1 = utils.batch_convert2float(self.val_x)
         v2 = self.G1(v1)
-        v3 = self.EDSR(v2)
-        val_y = utils.batch_convert2int(v2)
-        val_z = utils.batch_convert2int(v3)
+        v3 = self.EDSR(tf.clip_by_value(v2, -1, 1))
+        val_y = utils.batch_convert2int(tf.clip_by_value(v2, -1, 1))
+        val_z = utils.batch_convert2int(tf.clip_by_value(v3, -1, 1))
 
         # summary
-        '''
+
         tf.summary.histogram('D1/true', self.D1(y))
         tf.summary.histogram('D1/fake', self.D1(fake_y))
         tf.summary.histogram('D2/true', self.D2(z))
@@ -124,16 +124,22 @@ class CinCGAN:
         tf.summary.scalar('lr_loss/cycle_consistency', cyc_loss_lr)
         tf.summary.scalar('lr_loss/identity', idt_loss_lr)
         tf.summary.scalar('lr_loss/total_variation', ttv_loss_lr)
-        tf.summary.scalar('lr_loss/total_loss', G1_loss)
+        tf.summary.scalar('lr_loss/total_loss', G1_loss_in)
         # tf.summary.scalar('lr_loss/discriminator_loss', D1_loss)
 
         tf.summary.scalar('hr_loss/gan', gan_loss_hr)
         tf.summary.scalar('hr_loss/cycle_consistency', cyc_loss_hr)
         tf.summary.scalar('hr_loss/identity', idt_loss_hr)
         tf.summary.scalar('hr_loss/total_variation', ttv_loss_hr)
-        tf.summary.scalar('hr_loss/total_loss', EDSR_loss)
-        tf.summary.scalar('hr_loss/discriminator_loss', D2_loss)
+        tf.summary.scalar('hr_loss/total_loss', EDSR_loss_out)
+        tf.summary.scalar('hr_loss/discriminator_loss', D2_loss_out)
 
+        tf.summary.scalar('val_metrics/psnr_y', self.psnr_validation_y)
+        tf.summary.scalar('val_metrics/psnr_z', self.psnr_validation_z)
+        tf.summary.scalar('val_metrics/ssim_y', self.ssim_validation_y)
+        tf.summary.scalar('val_metrics/ssim_z', self.ssim_validation_z)
+
+        '''
         tf.summary.image('LR/x', utils.batch_convert2int(tf.expand_dims(x[0], 0)))
         tf.summary.image('LR/fake_y', utils.batch_convert2int(tf.expand_dims(fake_y[0], 0)))
         tf.summary.image('HR/fake_z', utils.batch_convert2int(tf.expand_dims(fake_z[0], 0)))

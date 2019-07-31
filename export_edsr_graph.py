@@ -7,7 +7,7 @@ import helpers.utils as utils
 
 FLAGS = tf.flags.FLAGS
 
-tf.flags.DEFINE_string('checkpoint_dir', 'checkpoints/edsr/blade', 'checkpoints directory path')
+tf.flags.DEFINE_string('checkpoint_dir', 'checkpoints/edsr/20190731-1005', 'checkpoints directory path')
 tf.flags.DEFINE_string('model', 'edsr.pb', 'Model name, default: edsr.pb')
 
 

@@ -43,10 +43,9 @@ class Generator3:
             return c7s1_3  # out
 
     def sample(self, input_img):
-        image = utils.batch_convert2int(self.__call__(input_img))
+        image = utils.batch_convert2int(tf.clip_by_value(self.__call__(input_img), -1, 1))
         image = tf.image.encode_png(tf.squeeze(image, [0]))
         return image
 
     def sample_f(self, input_img):
-        return tf.squeeze(self.__call__(input_img), [0])
-
+        return tf.squeeze(tf.clip_by_value(self.__call__(input_img), -1, 1), [0])

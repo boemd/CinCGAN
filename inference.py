@@ -1,5 +1,5 @@
 import tensorflow as tf
-from cycle_in_cycle.model import CinCGAN
+from models.model import CinCGAN
 from datetime import datetime
 import os
 import helpers.utils as utils
@@ -15,10 +15,10 @@ os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID";
 os.environ["CUDA_VISIBLE_DEVICES"]="2";
 '''
 FLAGS = tf.flags.FLAGS
-tf.flags.DEFINE_string('test_set', '../../data/DIV2K/X_validation/', 'validation set')
-tf.flags.DEFINE_string('ground_truth', '../../data/DIV2K/Z_test/', 'validation set')
-tf.flags.DEFINE_string('model', '../checkpoints/joint/20190723-1638/model.ckpt-0', 'folder of the saved complete model')
-tf.flags.DEFINE_string('output_folder', '../../data/inference/', 'output images folder')
+tf.flags.DEFINE_string('model', 'checkpoints/joint/20190731-1020/model.ckpt-0', 'folder of the saved complete model')
+tf.flags.DEFINE_string('test_set', '../data/DIV2K/X_validation/', 'validation set')
+tf.flags.DEFINE_string('ground_truth', '../data/DIV2K/Z_test/', 'validation set')
+tf.flags.DEFINE_string('output_folder', '../data/inference/', 'output images folder')
 
 
 def inference():
@@ -34,8 +34,7 @@ def inference():
     with graph.as_default():
         cin = CinCGAN()
 
-        G1_loss, EDSR_loss, G3_loss, D2_loss, val_y, val_z, fake_y, fake_z = cin.model()
-        optimizers = cin.optimize(G1_loss, EDSR_loss, G3_loss, D2_loss)
+        G1_loss_in, G2_loss_in, D1_loss_in, G1_loss_out, EDSR_loss_out, G3_loss_out, D2_loss_out, val_y, val_z, fake_y, fake_z, x = cin.model()
 
         lr_variables = cin.G1.variables + cin.G2.variables + cin.D1.variables
         hr_variables = cin.EDSR.variables + cin.G3.variables + cin.D2.variables

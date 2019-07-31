@@ -33,6 +33,7 @@ class EDSR:
             #x = ops.upsample4(x, features=self.feature_size, activation='relu', reuse=self.reuse, is_training=self.is_training, name='ups4')
             ############################################################################################################
             x = ops.c3s1_k(x, self.feature_size, reuse=self.reuse, activation='relu', is_training=self.is_training, name='ups' + '_conv_init')
+            x = x + conv_1
             ps_features = 3 * (2 ** 2)
             for i in range(2):
                 # x = slim.conv2d(x, ps_features, [3, 3], activation_fn=activation, reuse=reuse)

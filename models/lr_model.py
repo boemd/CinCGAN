@@ -70,7 +70,7 @@ class CleanGAN:
 
         v1 = utils.batch_convert2float(self.val_x)
         v2 = self.G1(v1)
-        val_y = utils.batch_convert2int(v2)
+        val_y = utils.batch_convert2int(tf.clip_by_value(v2, -1, 1))
 
         # summary
         tf.summary.histogram('D1/true', self.D1(y))
@@ -84,6 +84,7 @@ class CleanGAN:
         tf.summary.scalar('lr_loss/total_variation', ttv_loss)
         tf.summary.scalar('lr_loss/total_loss', G1_loss)
         tf.summary.scalar('lr_loss/discriminator_loss', D1_loss)
+
         tf.summary.scalar('val_metrics/psnr', self.psnr_validation)
         tf.summary.scalar('val_metrics/ssim', self.ssim_validation)
 

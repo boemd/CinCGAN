@@ -9,7 +9,7 @@ from os.path import isfile, join
 import cv2
 import numpy as np
 import math
-
+from helpers.utils import psnr, ssim
 '''
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID";
 os.environ["CUDA_VISIBLE_DEVICES"]="2";
@@ -18,7 +18,7 @@ FLAGS = tf.flags.FLAGS
 
 # loss parameters
 tf.flags.DEFINE_float('b1', 10, 'weight for the lr cycle consistency loss, default: 10')
-tf.flags.DEFINE_float('b2', 5, 'weight for the lr identity loss, default: 5')
+tf.flags.DEFINE_float('b2', 1, 'weight for the lr identity loss, default: 5')
 tf.flags.DEFINE_float('b3', 0.5, 'weight for the lr total variation loss, default: 0.5')
 tf.flags.DEFINE_float('l1', 10, 'weight for the hr cycle consistency loss, default: 10')
 tf.flags.DEFINE_float('l2', 5, 'weight for the hr identity loss, default: 5')
@@ -35,31 +35,31 @@ tf.flags.DEFINE_integer('scale', 4, 'scale of the super-resolution model, defaul
 
 # dataset parameters
 #  training
-tf.flags.DEFINE_string('X', '../../data/tfrecords/train_x.tfrecords',
+tf.flags.DEFINE_string('X', '../data/tfrecords/train_x.tfrecords',
                        'X tfrecords file for training, default: data/tfrecords/train_x.tfrecords')
-tf.flags.DEFINE_string('Y', '../../data/tfrecords/train_y.tfrecords',
+tf.flags.DEFINE_string('Y', '../data/tfrecords/train_y.tfrecords',
                        'Y tfrecords file for training, default: data/tfrecords/train_y.tfrecords')
-tf.flags.DEFINE_string('Z', '../../data/tfrecords/train_z.tfrecords',
+tf.flags.DEFINE_string('Z', '../data/tfrecords/train_z.tfrecords',
                        'Z tfrecords file for training, default: data/tfrecords/train_z.tfrecords')
 #  validation
-tf.flags.DEFINE_string('validation_set', '../../data/DIV2K/X_validation/', 'validation set')
-tf.flags.DEFINE_string('validation_ground_truth_y', '../../data/DIV2K/Y_validation/', 'validation ground truth set')
-tf.flags.DEFINE_string('validation_ground_truth_z', '../../data/DIV2K/Z_test/', 'validation ground truth set')
+tf.flags.DEFINE_string('validation_set', '../data/DIV2K/X_validation/', 'validation set')
+tf.flags.DEFINE_string('validation_ground_truth_y', '../data/DIV2K/Y_validation/', 'validation ground truth set')
+tf.flags.DEFINE_string('validation_ground_truth_z', '../data/DIV2K/Z_test/', 'validation ground truth set')
 
 
 # pre-trained models
 tf.flags.DEFINE_string('load_CinCGAN_model', None, 'folder of the saved complete model')
-tf.flags.DEFINE_string('load_CleanGAN_model', '../checkpoints/lr/20190719-1500/model.ckpt-390000', 'folder of the saved CinCGAN model')
-tf.flags.DEFINE_string('load_EDSR_model', '../checkpoints/edsr/20190717-1124/model.ckpt-224', 'folder of the saved EDSR model')
+tf.flags.DEFINE_string('load_CleanGAN_model', 'checkpoints/lr/20190719-1500/model.ckpt-390000', 'folder of the saved CinCGAN model')
+tf.flags.DEFINE_string('load_EDSR_model', 'checkpoints/edsr/blade_vecchio-810k/model.ckpt-810000', 'folder of the saved EDSR model')
 '''
-tf.flags.DEFINE_string('load_CinCGAN_model', '../checkpoints/joint/20190719-1500/model.ckpt-100', 'folder of the saved complete model')
-tf.flags.DEFINE_string('load_CleanGAN_model', '../checkpoints/lr/20190719-1500/model.ckpt-390000', 'folder of the saved CinCGAN model')
-tf.flags.DEFINE_string('load_EDSR_model', '../checkpoints/edsr/20190717-1124/model.ckpt-224', 'folder of the saved EDSR model')
+tf.flags.DEFINE_string('load_CinCGAN_model', 'checkpoints/joint/20190719-1500/model.ckpt-100', 'folder of the saved complete model')
+tf.flags.DEFINE_string('load_CleanGAN_model', 'checkpoints/lr/20190719-1500/model.ckpt-390000', 'folder of the saved CinCGAN model')
+tf.flags.DEFINE_string('load_EDSR_model', 'checkpoints/edsr/20190717-1124/model.ckpt-224', 'folder of the saved EDSR model')
 '''
 
 # others
-tf.flags.DEFINE_bool('validate', False, 'validation flag, default: True')
-tf.flags.DEFINE_bool('save_samples', False, 'samples flag, default: False')
+tf.flags.DEFINE_bool('validate', True, 'validation flag, default: True')
+tf.flags.DEFINE_bool('save_samples', True, 'samples flag, default: False')
 
 
 def train():
@@ -90,22 +90,6 @@ def train():
             checkpoints_HR_dir = '/'.join(checkpoints_HR_dir) + '/'
 
             combine = True
-
-    # create a logger
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
-
-    # create a file handler
-    handler = logging.FileHandler(checkpoints_dir + '/LOG.log')
-    handler.setLevel(logging.INFO)
-
-    # create a logger format
-    formatter = logging.Formatter('%(asctime)s,%(msecs)d %(name)s -- %(levelname)s: %(message)s', datefmt='%H:%M:%S')
-    handler.setFormatter(formatter)
-
-    # add the handlers to the logger
-    logger.addHandler(handler)
-    write_config_file(checkpoints_dir)
 
     graph = tf.Graph()
     with graph.as_default():
@@ -149,7 +133,7 @@ def train():
             sess.run(tf.global_variables_initializer())
             saver.restore(sess, FLAGS.load_CinCGAN_model)
             step = int(FLAGS.load_CinCGAN_model.split('-')[2])
-            logger.info('Starting from a pre-trained model. Step: {}.'.format(step))
+            logging.info('Starting from a pre-trained model. Step: {}.'.format(step))
         elif combine:
             sess.run(tf.global_variables_initializer())
             saver_lr.restore(sess, FLAGS.load_CleanGAN_model)
@@ -161,10 +145,10 @@ def train():
 
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
-        logger.info('CinCGAN initialized.')
+        logging.info('CinCGAN initialized.')
 
         try:
-            # print_total_parameters(logger)
+            # print_total_parameters()
 
             ps_y = 0  # validation PSNR for the images generated by the inner CycleGAN
             ps_z = 0  # validation PSNR for the images generated by the outer CycleGAN
@@ -176,7 +160,7 @@ def train():
 
                 if flag_resume or step == FLAGS.max_iter:
                     flag_resume = False
-                    ps_y, ps_z, ss_y, ss_z = validate(logger, cin, val_y, val_z)
+                    ps_y, ps_z, ss_y, ss_z = validate(logging, cin, val_y, val_z)
 
                 #cin.EDSR.is_training = False
                 #cin.G2.is_training = False
@@ -216,7 +200,9 @@ def train():
                                cin.prev_x: x_val,  # don't need it
                                cin.prev_y: fake_y_val,  # don't need it
                                cin.psnr_validation_y: ps_y,
-                               cin.psnr_validation_z: ps_z
+                               cin.psnr_validation_z: ps_z,
+                               cin.ssim_validation_y: ss_y,
+                               cin.ssim_validation_z: ss_z
                                }
                 )
 
@@ -226,41 +212,47 @@ def train():
                 train_writer.add_summary(summary, step)
                 train_writer.flush()
 
-                if step % 10 == 0:
+                if step % 100 == 0:
                     logging.info('-----------Step %d:-------------' % step)
-                    logging.info('  G1_loss     : {}'.format(G1_loss_out_val))
-                    logging.info('  EDSR_loss   : {}'.format(EDSR_loss_out_val))
-                    logging.info('  G3_loss     : {}'.format(G3_loss_out_val))
-                    logging.info('  D2_loss     : {}'.format(D2_loss_out_val))
+                    logging.info('  G1_loss     : {:f}'.format(G1_loss_in_val))
+                    logging.info('  G2_loss     : {:f}'.format(G2_loss_in_val))
+                    logging.info('  D1_loss     : {:f}'.format(D1_loss_in_val))
+                    logging.info('--------------------------------')
+                    logging.info('  G1_loss     : {:f}'.format(G1_loss_out_val))
+                    logging.info('  EDSR_loss   : {:f}'.format(EDSR_loss_out_val))
+                    logging.info('  G3_loss     : {:f}'.format(G3_loss_out_val))
+                    logging.info('  D2_loss     : {:f}'.format(D2_loss_out_val))
+                    if FLAGS.save_samples:
+                        save_samples(checkpoints_dir, step, cin, val_z, sess)
 
-                if step % 10000 == 0:
+                if step % 20000 == 0:
                     save_path = saver.save(sess, checkpoints_dir + "/model.ckpt", global_step=step)
                     logging.info("Model saved in file: %s" % save_path)
                     if FLAGS.validate:
-                        ps_y, ps_z, ss_y, ss_z = validate(logger, cin, val_y, val_z)
+                        ps_y, ps_z, ss_y, ss_z = validate(logging, cin, val_y, val_z)
 
                 step += 1
 
         except KeyboardInterrupt:
-            logger.info('Interrupted')
+            logging.info('Interrupted')
             coord.request_stop()
 
         except Exception as e:
             coord.request_stop(e)
         finally:
             save_path = saver.save(sess, checkpoints_dir + "/model.ckpt", global_step=step)
-            logger.info("Model saved in file: %s" % save_path)
+            logging.info("Model saved in file: %s" % save_path)
             # When done, ask the threads to stop.
             coord.request_stop()
             coord.join(threads)
 
 
-def validate(logger, cin, val_y, val_z):
+def validate(logging, cin, val_y, val_z):
     files = [f for f in listdir(FLAGS.validation_set) if isfile(join(FLAGS.validation_set, f))]
     gt_y_files = [f for f in listdir(FLAGS.validation_ground_truth_y) if isfile(join(FLAGS.validation_ground_truth_y, f))]
     gt_z_files = [f for f in listdir(FLAGS.validation_ground_truth_z) if isfile(join(FLAGS.validation_ground_truth_z, f))]
     rounds = len(files)
-    logger.info('Validating...')
+    logging.info('Validating...')
     ps_y = 0
     ps_z = 0
     ss_y = 0
@@ -290,71 +282,10 @@ def validate(logger, cin, val_y, val_z):
     ps_z /= rounds
     ss_y /= rounds
     ss_z /= rounds
-    logger.info('Validation completed.')
-    logger.info('Y domain. PSNR: {:f}, SSIM: {:f}.'.format(ps_y, ss_y))
-    logger.info('Z domain. PSNR: {:f}, SSIM: {:f}.'.format(ps_z, ss_z))
+    logging.info('Validation completed.')
+    logging.info('Y domain. PSNR: {:f}, SSIM: {:f}.'.format(ps_y, ss_y))
+    logging.info('Z domain. PSNR: {:f}, SSIM: {:f}.'.format(ps_z, ss_z))
     return ps_y, ps_z, ss_y, ss_z
-
-
-def psnr(imageA, imageB):
-    E = imageA.astype("double")/255 - imageB.astype("double")/255
-    N = imageA.shape[0] * imageA.shape[1] * imageA.shape[2]
-    return round(10 * math.log10(N / np.sum(np.power(E, 2))), 4)
-
-
-def ssim(im1, im2):
-    h, w, d = im1.shape
-    ssim = 0
-    for i in range(d):
-        a = im1[:, :, i]
-        b = im2[:, :, i]
-        K = [0.01, 0.03]
-        L = 255
-
-        C1 = (K[0]*L)**2
-        C2 = (K[1]*L)**2
-        a = a.astype(float)
-        b = b.astype(float)
-        mu1 = cv2.GaussianBlur(a, (11, 11), 1.5, cv2.BORDER_ISOLATED)
-        mu1 = mu1[5:, 5:]
-        mu1 = mu1[:-5, :-5]
-        mu2 = cv2.GaussianBlur(b.astype(float), (11, 11), 1.5, cv2.BORDER_ISOLATED)
-        mu2 = mu2[5:, 5:]
-        mu2 = mu2[:-5, :-5]
-
-        mu1_sq = mu1 ** 2
-        mu2_sq = mu2 ** 2
-        mu1_mu2 = np.multiply(mu1, mu2)
-
-        sigma1_sq = cv2.GaussianBlur(a**2, (11, 11), 1.5)
-        sigma1_sq = sigma1_sq[5:, 5:]
-        sigma1_sq = sigma1_sq[:-5, :-5] - mu1_sq
-
-        sigma2_sq = cv2.GaussianBlur(b**2, (11, 11), 1.5)
-        sigma2_sq = sigma2_sq[5:, 5:]
-        sigma2_sq = sigma2_sq[:-5, :-5] - mu2_sq
-
-        sigma12 = cv2.GaussianBlur(np.multiply(a, b), (11, 11), 1.5)
-        sigma12 = sigma12[5:, 5:]
-        sigma12 = sigma12[:-5, :-5] - mu1_mu2
-
-        if C1 > 0 and C2 > 0:
-            ssim_map = np.divide(np.multiply((2 * mu1_mu2 + C1), (2 * sigma12 + C2)), np.multiply((mu1_sq + mu2_sq + C1), (sigma1_sq + sigma2_sq + C2)))
-        else:
-            # this is useless
-            numerator1 = 2 * mu1_mu2 + C1
-            numerator2 = 2 * sigma12 + C2
-            denominator1 = mu1_sq + mu2_sq + C1
-            denominator2 = sigma1_sq + sigma2_sq + C2
-            ssim_map = np.ones((h, w))
-            index = np.nonzero(np.clip(np.dot(denominator1, denominator2), a_min=0))
-            ssim_map[index] = np.dot(numerator1[index], numerator2[index]) / \
-                              np.dot(denominator1[index], denominator2[index])
-            index = np.nonzero(denominator1) and np.argwhere(denominator2 == 0)
-            ssim_map[index] = numerator1[index] / denominator1[index]
-        ssim += np.mean(ssim_map)
-    ssim /= d
-    return np.round(ssim, 4)
 
 
 def write_config_file(checkpoints_dir):
@@ -373,7 +304,7 @@ def write_config_file(checkpoints_dir):
         c.write('Total variation loss term (l3):' + str(FLAGS.l3) + '\n')
 
 
-def print_total_parameters(logger):
+def print_total_parameters():
     total_parameters = 0
     for variable in tf.trainable_variables():
         # shape is an array of tf.Dimension
@@ -382,7 +313,35 @@ def print_total_parameters(logger):
         for dim in shape:
             variable_parameters *= dim.value
         total_parameters += variable_parameters
-    logger.info('Total parameters of the network: ', total_parameters, '#')
+    logging.info('Total parameters of the network: ', total_parameters, '#')
+
+
+def save_samples(checkpoints_dir, step, cin, val_z, sess):
+    img_name_803 = '../data/DIV2K/X_validation/0803x4.png'
+    img_name_810 = '../data/DIV2K/X_validation/0810x4.png'
+    img_name_823 = '../data/DIV2K/X_validation/0823x4.png'
+    img_name_829 = '../data/DIV2K/X_validation/0829x4.png'
+    output_folder = checkpoints_dir + '/samples'
+    try:
+        os.makedirs(output_folder)
+    except os.error:
+        pass
+
+    files_sv = [img_name_803, img_name_810, img_name_823, img_name_829]
+    rounds_sv = len(files_sv)
+
+    for i in range(rounds_sv):
+        img = cv2.imread(files_sv[i])
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        im1 = np.zeros([1, img.shape[0], img.shape[1], img.shape[2]])
+        im1[0] = img
+        im1 = im1.astype('uint8')
+        y = sess.run(val_z, feed_dict={cin.val_x: im1})
+        y = y[0]
+        y = cv2.cvtColor(y, cv2.COLOR_RGB2BGR)
+        out_name = output_folder + '/' + 'step_' + str(step) + '_img_' + str(i) + '.png'
+        cv2.imwrite(out_name, y)
+
 
 
 def main(unused_argv):
@@ -390,5 +349,6 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     tf.app.run()
 

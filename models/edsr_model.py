@@ -37,8 +37,8 @@ class E_mod:
         # y = tf.to_float(utils.batch_convert2int(y))  # tf.to_float(
 
         # val_y = self.edsr(tf.to_float(self.val_x))
-        val_y = utils.batch_convert2int(self.edsr(utils.batch_convert2float(self.val_x)))
-
+        # val_y = utils.batch_convert2int(self.edsr(utils.batch_convert2float(self.val_x)))
+        val_y = utils.batch_convert2int(tf.clip_by_value(self.edsr(utils.batch_convert2float(self.val_x)), -1, 1))
         fake_y = self.edsr(x)
 
         loss = tf.reduce_mean(tf.abs(y - fake_y))
@@ -54,11 +54,11 @@ class E_mod:
         tf.summary.scalar("metrics/PSNR", PSNR)
         tf.summary.scalar('validation_metrics/psnr', self.psnr_validation)
         tf.summary.scalar('validation_metrics/ssim', self.ssim_validation)
-
+        '''
         tf.summary.image('EDSR/input', utils.batch_convert2int(tf.expand_dims(x[0], 0)))
         tf.summary.image('EDSR/output', utils.batch_convert2int(tf.expand_dims(fake_y[0], 0)))
         tf.summary.image('EDSR/ground_truth', utils.batch_convert2int(tf.expand_dims(y[0], 0)))
-
+        '''
         return loss, val_y
 
     def optimize(self, loss, starter_learning_rate=1e-4):
