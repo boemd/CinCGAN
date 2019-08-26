@@ -160,9 +160,9 @@ def train():
                     flag_resume = False
                     ps_y, ps_z, ss_y, ss_z = validate(logging, cin, val_y, val_z)
 
-                #cin.EDSR.is_training = False
-                #cin.G2.is_training = False
-                #cin.D2.is_training = False
+                cin.EDSR.is_training = False
+                cin.G2.is_training = False
+                cin.D2.is_training = False
 
                 x_val = x.eval()
                 fake_y_val = fake_y.eval()
@@ -184,12 +184,12 @@ def train():
 
                 train_writer.add_summary(summary, step)
 
-                #cin.EDSR.is_training = True
-                #cin.G2.is_training = True
-                #cin.D2.is_training = True
+                cin.EDSR.is_training = True
+                cin.G2.is_training = True
+                cin.D2.is_training = True
 
-                #cin.G2.is_training = False
-                #cin.D1.is_training = False
+                cin.G2.is_training = False
+                cin.D1.is_training = False
 
                 _, G1_loss_out_val, EDSR_loss_out_val, G3_loss_out_val, D2_loss_out_val, summary = sess.run(
                     [optimizers_out, G1_loss_out, EDSR_loss_out, G3_loss_out, D2_loss_out, summary_op],
