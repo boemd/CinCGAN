@@ -6,7 +6,7 @@ import cv2
 
 FLAGS = tf.flags.FLAGS
 
-tf.flags.DEFINE_string('model', 'checkpoints/lr/20190731-0948/g1.pb', 'model path (.pb)')
+tf.flags.DEFINE_string('model', 'checkpoints/lr/20190406-1855/g1.pb', 'model path (.pb)')
 tf.flags.DEFINE_string('input_folder', '../data/DIV2K/X_validation/', 'input image path (.png)')
 tf.flags.DEFINE_string('input_gt_folder', '../data/DIV2K/X_validation_gt/', 'input image path (.png)')
 tf.flags.DEFINE_string('output_folder', '../data/inference/', 'output images folder')

@@ -6,7 +6,7 @@ import cv2
 
 FLAGS = tf.flags.FLAGS
 
-tf.flags.DEFINE_string('model', 'checkpoints/edsr/20190731-1005/edsr.pb', 'model path (.pb)')
+tf.flags.DEFINE_string('model', 'checkpoints/edsr/20190727-1728/edsr.pb', 'model path (.pb)')
 tf.flags.DEFINE_string('input_folder', '../data/DIV2K/Z_test/', 'input image path (.png)')
 tf.flags.DEFINE_string('output_folder', '../data/inference/', 'output images folder')
 tf.flags.DEFINE_integer('scale', 4, 'scale, default: 4')

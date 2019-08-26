@@ -18,7 +18,7 @@ FLAGS = tf.flags.FLAGS
 
 # loss parameters
 tf.flags.DEFINE_float('b1', 10, 'weight for the lr cycle consistency loss, default: 10')
-tf.flags.DEFINE_float('b2', 1, 'weight for the lr identity loss, default: 5')
+tf.flags.DEFINE_float('b2', 1, 'weight for the lr identity loss, default: 1')
 tf.flags.DEFINE_float('b3', 0.5, 'weight for the lr total variation loss, default: 0.5')
 tf.flags.DEFINE_float('l1', 10, 'weight for the hr cycle consistency loss, default: 10')
 tf.flags.DEFINE_float('l2', 5, 'weight for the hr identity loss, default: 5')
@@ -49,7 +49,7 @@ tf.flags.DEFINE_string('validation_ground_truth_z', '../data/DIV2K/Z_test/', 'va
 
 # pre-trained models
 tf.flags.DEFINE_string('load_CinCGAN_model', None, 'folder of the saved complete model')
-tf.flags.DEFINE_string('load_CleanGAN_model', 'checkpoints/lr/20190729-1510/model.ckpt-240000', 'folder of the saved CinCGAN model')
+tf.flags.DEFINE_string('load_CleanGAN_model', 'checkpoints/lr/standard-0/model.ckpt-400001', 'folder of the saved CinCGAN model')
 tf.flags.DEFINE_string('load_EDSR_model', 'checkpoints/edsr/20190727-1728/model.ckpt-490000', 'folder of the saved EDSR model')
 '''
 tf.flags.DEFINE_string('load_CinCGAN_model', 'checkpoints/joint/20190719-1500/model.ckpt-100', 'folder of the saved complete model')
@@ -82,12 +82,10 @@ def train():
             checkpoints_LR_dir = FLAGS.load_CleanGAN_model
             checkpoints_LR_dir = checkpoints_LR_dir.split('/')
             checkpoints_LR_dir.pop()
-            checkpoints_LR_dir = '/'.join(checkpoints_LR_dir) + '/'
 
             checkpoints_HR_dir = FLAGS.load_EDSR_model
             checkpoints_HR_dir = checkpoints_HR_dir.split('/')
             checkpoints_HR_dir.pop()
-            checkpoints_HR_dir = '/'.join(checkpoints_HR_dir) + '/'
 
             combine = True
 

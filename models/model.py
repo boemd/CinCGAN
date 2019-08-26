@@ -79,8 +79,8 @@ class CinCGAN:
         y, _, _, _ = Y_reader.feed(seed)
         z, _, _, _ = Z_reader.feed(seed)
 
-        fake_y = self.G1(tf.clip_by_value(x, -1, 1))
-        fake_z = self.EDSR(tf.clip_by_value(fake_y, -1, 1))
+        fake_y = self.G1(x)
+        fake_z = self.EDSR(fake_y)
 
         # Inelegant, inefficient, ugly af.
         # If anyone will ever read this code, please find a solution to modify it please
@@ -96,7 +96,7 @@ class CinCGAN:
         cyc_loss_hr = self.cycle_consistency_loss(self.G3, f_z, self.prev_x) * self.l1
         idt_loss_hr = self.new_identity_loss(self.EDSR, z) * self.l2
         ttv_loss_hr = self.total_variation_loss(f_z) * self.l3
-        dis_loss_hr = self.discriminator_adversarial_loss(self.D2, z, self.fake_z)
+        dis_loss_hr = self.discriminator_adversarial_loss(self.D2, z, f_z)
 
         G1_loss_in = gan_loss_lr + cyc_loss_lr + idt_loss_lr + ttv_loss_lr
         G2_loss_in = cyc_loss_lr

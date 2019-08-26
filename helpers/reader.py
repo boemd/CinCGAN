@@ -2,6 +2,7 @@ import tensorflow as tf
 import helpers.utils as utils
 import numpy as np
 import random
+import cv2
 
 H = 183
 W = 279
@@ -237,10 +238,10 @@ def test_pick():
 
 
 def test_reader():
-    TRAIN_FILE_1 = '../data/tfrecords/train_z.tfrecords'
+    TRAIN_FILE_1 = '../../data/tfrecords/train_z.tfrecords'
 
     with tf.Graph().as_default():
-        reader1 = Reader(TRAIN_FILE_1, batch_size=3)
+        reader1 = Reader(TRAIN_FILE_1, batch_size=3, crop_size=128)
 
         images, gt, a, b = reader1.feed(seed=200, val=True)
         imgint = utils.batch_convert2int(images)
@@ -257,8 +258,16 @@ def test_reader():
             step = 0
             while not coord.should_stop():
                 batch_img, batch_gt, aa, bb = sess.run([imgint, gtint, a, b])
-                print(aa)
-                print(bb)
+                #print(aa)
+                #print(bb)
+                i0 = cv2.vconcat([batch_img[0], batch_gt[0]])
+                i1 = cv2.vconcat([batch_img[1], batch_gt[1]])
+                i2 = cv2.vconcat([batch_img[2], batch_gt[2]])
+                i = cv2.hconcat([i0, i1, i2])
+
+                w = cv2.namedWindow('a2', cv2.WINDOW_NORMAL)
+                cv2.imshow('a2', i)
+                cv2.waitKey(0)
                 '''
                 plt.figure(1)
                 plt.subplot(231)

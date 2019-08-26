@@ -6,7 +6,7 @@ import helpers.utils as utils
 
 FLAGS = tf.flags.FLAGS
 
-tf.flags.DEFINE_string('checkpoint_dir', 'checkpoints/lr/20190731-0948', 'checkpoints directory path')
+tf.flags.DEFINE_string('checkpoint_dir', 'checkpoints/lr/20190406-1855', 'checkpoints directory path')
 tf.flags.DEFINE_string('XtoY_model', 'g1.pb', 'XtoY model name, default: g1.pb')
 tf.flags.DEFINE_string('YtoX_model', 'g2.pb', 'YtoX model name, default: g2.pb')
 tf.flags.DEFINE_integer('image_size', None, 'image size, default: None')
