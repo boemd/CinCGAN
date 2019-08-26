@@ -204,8 +204,8 @@ def train():
                                }
                 )
 
-                #cin.G2.is_training = True
-                #cin.D1.is_training = True
+                cin.G2.is_training = True
+                cin.D1.is_training = True
 
                 train_writer.add_summary(summary, step)
                 train_writer.flush()
