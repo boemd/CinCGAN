@@ -60,7 +60,7 @@ tf.flags.DEFINE_string('load_EDSR_model', 'checkpoints/edsr/20190717-1124/model.
 # others
 tf.flags.DEFINE_bool('validate', False, 'validation flag, default: True')
 tf.flags.DEFINE_bool('save_samples', True, 'samples flag, default: False')
-tf.flags.DEFINE_string('info', 'info', 'additional infos for the config file')
+tf.flags.DEFINE_string('info', ' double quoted string ', 'additional info for the config file')
 
 
 def train():
