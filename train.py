@@ -58,8 +58,9 @@ tf.flags.DEFINE_string('load_EDSR_model', 'checkpoints/edsr/20190717-1124/model.
 '''
 
 # others
-tf.flags.DEFINE_bool('validate', True, 'validation flag, default: True')
+tf.flags.DEFINE_bool('validate', False, 'validation flag, default: True')
 tf.flags.DEFINE_bool('save_samples', True, 'samples flag, default: False')
+tf.flags.DEFINE_string('info', 'info', 'additional infos for the config file')
 
 
 def train():
@@ -88,6 +89,8 @@ def train():
             checkpoints_HR_dir.pop()
 
             combine = True
+
+    write_config_file(checkpoints_dir)
 
     graph = tf.Graph()
     with graph.as_default():
@@ -210,7 +213,7 @@ def train():
                 train_writer.add_summary(summary, step)
                 train_writer.flush()
 
-                if step % 100 == 0:
+                if step % 100 == 0 or step <= 25:
                     logging.info('-----------Step %d:-------------' % step)
                     logging.info('  G1_loss     : {:f}'.format(G1_loss_in_val))
                     logging.info('  G2_loss     : {:f}'.format(G2_loss_in_val))
@@ -300,6 +303,13 @@ def write_config_file(checkpoints_dir):
         c.write('Cycle consistency loss term (l1):' + str(FLAGS.l1) + '\n')
         c.write('Identity loss term (l2):' + str(FLAGS.l2) + '\n')
         c.write('Total variation loss term (l3):' + str(FLAGS.l3) + '\n')
+        if FLAGS.load_CinCGAN_model is not None:
+            c.write('Input CinCGAN model: ' + str(FLAGS.load_CinCGAN_model) + '\n')
+        else:
+            c.write('Input CleanGAN model: ' + str(FLAGS.load_CleanGAN_model) + '\n')
+            c.write('Input EDSR model: ' + str(FLAGS.load_EDSR_model) + '\n')
+        c.write('Other information: ' + FLAGS.info + '\n')
+
 
 
 def print_total_parameters():

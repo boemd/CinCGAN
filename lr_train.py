@@ -37,6 +37,7 @@ tf.flags.DEFINE_string('load_model', None,
 tf.flags.DEFINE_integer('max_iter', 400000, 'maximum number of iterations during training, default: 400000')
 tf.flags.DEFINE_string('validation_set', '../data/DIV2K/X_validation/', 'validation set')
 tf.flags.DEFINE_string('validation_ground_truth', '../data/DIV2K/X_validation_gt/', 'validation ground truth set')
+tf.flags.DEFINE_string('info', 'info', 'additional infos for the config file')
 
 
 def train():
@@ -211,6 +212,7 @@ def write_config_file(checkpoints_dir):
         c.write('Cycle consistency loss term (b1):' + str(FLAGS.b1) + '\n')
         c.write('Identity loss term (b2):' + str(FLAGS.b2) + '\n')
         c.write('Total variation loss term (b3):' + str(FLAGS.b3) + '\n')
+        c.write('Other information: ' + FLAGS.info + '\n')
 
 
 def print_total_parameters():
